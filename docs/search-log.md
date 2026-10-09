@@ -27,15 +27,30 @@ Each agent used web search and page fetches because Exa was rate-limited. Counts
 | FDA, India, privacy | 15 | 12 | 11 further full texts opened from search results (FDA PDF, town hall, DPDP Act, GenomeIndia PDF, IVDR, GA4GH DSIP). |
 | Evaluation and agent design | 22 | 29 | 1 curl. Two Phenopacket schema pages timed out. |
 
-## Totals
+## Ranker-pass totals
 
 - Exa attempts: 8, all empty.
 - Web searches that ran: 16 parent + 13 + 23 + 17 + 15 + 22 = **106**.
 - Page fetches reported by subagents: 4 + 26 + 48 + 12 + 29 = **119**. Parent searches also stored full text for a subset of hits; those are not double-counted as a separate 119.
 - Download and API batches: 2 parent downloads + 17 + 12 + 1 = **32**.
 
-## Review pass
+## Review pass on the ranker
 
-Four reviews read the draft plan (evaluator, optimizer, investor panel, clinician plus hiring-manager and stack). They added no web searches. Plan edits from that pass are in [review.md](review.md).
+Four reviews read the ranker draft (evaluator, optimizer, investor panel, clinician plus hiring-manager and stack). They added no web searches. That review is superseded by the correlator pass below. The ranker file is no longer the plan.
 
-Padding this log with repeat queries would not make the census more true. The total that ran remains 106 web searches, 119 subagent page fetches, 32 download or API batches, and 8 failed Exa attempts.
+## Redesign pass (correlator reference layer)
+
+Exa was not retried. No Exa API key was added. Cursor web search ran 13 times. Topics: gnomAD v4 counts and downloads, gnomAD policies (the Broad policies page was not fully fetched; a CC0 line on a regional mirror was not adopted), ClinPGx/CPIC licences, NHANES August 2021–August 2023 sample size, UK Biobank and All of Us access, 1000 Genomes, GTEx open summaries versus dbGaP, OpenSNP, Harvard Personal Genome Project, Synthea, UDN dbGaP, LOINC and UCUM licences, Gemini free-tier pricing. Full text for a subset (gnomAD downloads, NHANES demographics, LOINC licence, Gemini pricing, a UDN manual, GTEx downloads) was stored in a scratch directory and is not committed. This pass did not re-download the Phenopacket Store or MONDO. It did not add a page-fetch total on top of the 119 already logged; those 13 searches are web searches, not a new fetch census.
+
+## Critic pass on the correlator
+
+Five reviews read the correlator plan (evaluator, optimizer, investor panel, clinician, stack). They were instructed not to search, and they added no web searches. Edits from that pass are in [review.md](review.md).
+
+## Totals
+
+- Exa attempts: 8, all empty. Unchanged.
+- Web searches that ran: 106 from the ranker research + 13 from the correlator reference pass = **119**.
+- Page fetches reported by the ranker subagents: **119**. The redesign pass does not add a second page-fetch count.
+- Download and API batches: **32**. Unchanged. No new zip or obo download.
+
+Padding this log with repeat queries would not make the census more true. The total that ran remains 119 web searches, 119 subagent page fetches from the first research pass, 32 download or API batches, and 8 failed Exa attempts.
