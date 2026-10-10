@@ -4,7 +4,19 @@ Status: plan only. No application code, schema migration, or service is in this 
 
 Owner: Ashish Kumar. This portfolio repo was a longitudinal HPO-to-Orphanet ranker. That concept is replaced. What remains is a research demo, unbuilt until this plan is approved: for one synthetic person, over time, cited comparisons of already-reported facts. The comparisons are the three objects the owner asked for — a risk signal, a rare-disease likelihood, and an alarm or recommendation — and section 2 defines the words on the card so those nouns are not read as a diagnosis, a probability, or an order. The demo does not diagnose, intervene, order, or discover a correlation.
 
-Checked against primary pages in the earlier research pass and against a second pass on 9 October 2026 for the reference layer (gnomAD, ClinPGx/CPIC, NHANES, UK Biobank, All of Us, Synthea, GTEx, OpenSNP, PGP, LOINC/UCUM, UDN, Gemini). Counts are in [docs/search-log.md](docs/search-log.md). They are not 1,500. Anything this file did not re-open is marked unverified or left in section 7.
+Checked against primary pages in the earlier research pass and against a second pass on 9 October 2026 for the reference layer (gnomAD, ClinPGx/CPIC, NHANES, UK Biobank, All of Us, Synthea, GTEx, OpenSNP, PGP, LOINC/UCUM, UDN, Gemini). A third pass on 10 October 2026 checked Neon, GitHub Actions, Vercel Hobby, and the Exomiser install page. Counts are in [docs/search-log.md](docs/search-log.md). They are not 1,500. Anything this file did not re-open is marked unverified or left in section 7.
+
+## 0. Two tracks
+
+Sections 1–9 are the evidence design: cited comparisons, a database approval gate, and the limit that synthetic rows cannot discover a correlation. The build is [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md). It splits that design into two tracks.
+
+1. **Safe core, releasable later.** A private notebook for a patient, a caregiver, or an advocate helping one family. One case. A timeline. HPO terms the person confirms through `apply_decision`. Lab-reported variants typed from the report. A monthly public ClinVar and ClinGen change list, downloaded and matched on the device. A one-to-two-page summary PDF filled from a fixed template library. No sentence on that screen is model prose. No diagnosis, no probability, no dose, no “you are fine.”
+2. **Experimental track, not for real users unless Ashish later allows it.** A second Compose file and a separate container. It reads a gene-panel or exome VCF on the laptop, runs Exomiser and LIRICAL unchanged, and can combine those tool results with accepted symptoms, labs, family history, medications, and a population-frequency display the tool already prints. Output is the tool’s own file plus a calibration note from published cases. Public and synthetic inputs only. The safe core has no route that starts this container.
+3. **A2A is on for one service.** `services/literature` holds an NCBI key and speaks A2A. The patient Compose file does not start it. The experimental Compose file does. A literature passage still becomes a pending draft; it does not enter the safe-core PDF.
+
+This supersedes three sentences in the sections below: that A2A is absent, that a VCF is never a process in this repo, and that the only user is an operator of synthetic charts. The gate in section 2 is unchanged. On a real laptop the reviewer is the person who holds the papers, still taken from the session, still not from the request body. Neon’s free plan is for the synthetic demo only. Neon’s own docs say Free and Launch are not the HIPAA plan ([HIPAA guide](https://neon.com/guides/hipaa-compliant-applications), opened 10 October 2026). Real records do not go there.
+
+The patient screen does not show the catalogue-comparison likelihood, the NHANES rank, or a ClinPGx sentence. Those are evaluation outputs and, where a tool already computes them, experimental outputs. A patient-facing likelihood or a copied dosing sentence is the wrong object when nobody clinical is in the loop. The 10 October product note states that constraint; this plan follows it.
 
 ## 1. Problem and impact
 
@@ -71,7 +83,7 @@ Excluded, with the reason:
 
 | Left out | Why |
 | --- | --- |
-| VCF, BAM, FASTQ, variant calling, ACMG/AMP classification | FDA Criterion 1, below. Also the wrong size for a public demo database. |
+| VCF, BAM, FASTQ, variant calling, ACMG/AMP classification on the safe core | FDA Criterion 1, below, and the patient-facing device reading in section 10. The experimental container in [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) is the only place a VCF is read, and it is not started by the notebook. |
 | Images, DICOM, faces, voice, video | Criterion 1 covers medical-image analysis. FDNA’s RAPID work is that modality. |
 | Family-history, exposure, or imaging “alarms” | The accepted fact is already on the timeline. A second card that says a clinician may want to look trains the reader to ignore cards that do compare against a file. |
 | Polygenic scores, methylation, episignatures | A new interpretation of a genotype or an assay, and no reference this repo can commit. |
@@ -151,7 +163,7 @@ The core is rules and lookups. An agent wrapped around a human click would be a 
 | An agent whose job is the human gate | Not used | The gate is a table, a function, and a form. |
 | An LLM that ranks diseases, classifies variants, or sets a threshold | Not used | Those are table lookups. A model there cannot be calibrated on synthetic patients. |
 | MCP | Not used | The UI calls FastAPI. Tests import the package. No client speaks MCP. An adapter with no caller is ceremony. Lookups stay Python functions. |
-| A2A, including a literature container | Not used | v1 has no card that consumes a literature passage. A second container does not isolate a secret the demo does not have. An NCBI key in an environment variable would still be a key on a machine; it would not by itself justify a protocol. If a later card needed a foreign credential, the passage would still enter as a pending draft through this API, and the span trigger would still apply. That card is not in this plan. |
+| A2A literature container | Used, off the patient Compose file | Section 0. The NCBI key lives only in `services/literature`. The notebook does not start that process. The experimental Compose file does. A passage is a pending draft. It is not a safe-core PDF sentence. |
 | Google ADK, LiveKit, CrewAI, LlamaIndex, LangSmith, assistant-ui, a vector database | Not used | No voice, no chat gate, no embedding. Quote checks are substring spans. |
 
 The workflow is a draft status (`pending`, `superseded`, `approved`, `rejected`) in FastAPI plus the function. FastAPI does not write observations.
@@ -463,7 +475,7 @@ Lesson titles are ones that rendered on a public course page in the earlier rese
 | LangChain: Chat with Your Data | Introduction; Document Splitting; Vectorstores and Embedding; Retrieval; Question Answering | Deliberately unused. No retrieval card. |
 | Evaluating AI Agents | Introduction; Evaluation in the time of LLMs; Decomposing agents; tracing; router and skill evaluations; trajectory evaluations; structure; LLM-as-a-judge; monitoring | The evaluation section is the part that applies, and it is ordinary tests. LLM-as-a-judge does not set a likelihood or an alarm. |
 | Agentic AI | What is agentic AI?; Degrees of autonomy; Task decomposition; Evaluating agentic AI; tools and MCP lessons that rendered | Deliberately unused as a runtime. Comparisons are functions with no autonomy. The MCP lessons have no client in this repo. |
-| A2A: The Agent2Agent Protocol | Introduction; Why Agent2Agent Protocol?; A2A Architecture; Wrapping the QA Agent into an A2A Server; Advanced A2A Concepts | Deliberately unused. No literature card, no foreign credential. About 3% of the 418-posting sample mentioned A2A. That rate is not a reason to add a container. |
+| A2A: The Agent2Agent Protocol | Introduction; Why Agent2Agent Protocol?; A2A Architecture; Wrapping the QA Agent into an A2A Server; Advanced A2A Concepts | One server, `services/literature`, because it holds an NCBI key. It is not on the patient Compose file. About 3% of the 418-posting sample mentioned A2A. That rate is not why the service exists. The key is. |
 | MCP with Anthropic | Introduction; Chatbot Example; Creating an MCP Server | Deliberately unused. No MCP client. Authorization on the course page was still roadmap text. |
 | Governing AI Agents | Introduction; What is AI Agent Governance?; Establishing Governance in Catalogs; Building, Evaluating & Deploying Agents | The decision row and the revoked `EXECUTE` are the part that applies. No Unity Catalog. No NCBI key. |
 | Building Adaptive AI Agents | Introduction; Overview of Continual Learning; Behavior Adaptation; Knowledge Adaptation Through Code Graphs | Unused. Drafts are not auto-promoted. A person accepts them. No fine-tune. |
@@ -485,4 +497,4 @@ Replaced:
 - Pass bars: k = 1 and k = 5, abstentions count as misses, a miss fails the eval, the degree baseline’s corpus is the 249’s Orphanet phenotype rows.
 - The reference gap is a limit on what a pass means. Credentialed cohorts stay out. Synthea is plumbing.
 
-[docs/review.md](docs/review.md) records what this critic pass changed.
+[docs/review.md](docs/review.md) records what the correlator critic pass changed. Section 0 and [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) are the later build decision: a patient notebook, a local experimental genome container, and a literature service that is the one A2A process.

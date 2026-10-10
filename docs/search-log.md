@@ -46,11 +46,19 @@ Exa was not retried. No Exa API key was added. Cursor web search ran 13 times. T
 
 Five reviews read the correlator plan (evaluator, optimizer, investor panel, clinician, stack). They were instructed not to search, and they added no web searches. Edits from that pass are in [review.md](review.md).
 
+## Implementation-plan pass (10 October 2026)
+
+Exa `web_search_exa`: 1 attempt, failed, free MCP rate limit. No Exa API key.
+
+Cursor web search: 5. Topics and pages that returned text: Neon free-plan FAQ and plans page (1 GB, 100 CU-hours, 6-hour history, scale-to-zero after 5 minutes) and the HIPAA guide (Free and Launch are not the HIPAA plan); GitHub Actions billing (standard runners free on public repositories; GitHub Free private repositories include 2,000 minutes per month); Exomiser installation page (data download described as approximately 80 GB, at least 100 GB free disk, 4 GB RAM minimum for an exome) and issue 622’s listed 30G hg38 variants file; Vercel Hobby and fair-use pages (personal non-commercial; included transfer and invocation caps); Exomiser LICENCE (AGPL-3.0 text) and the LIRICAL licence grant snippet (non-commercial, non-transferable, non-sublicensable). The rest of the LIRICAL licence file was not read. Runner disk size, a free long-running FastAPI host, and Gemini’s current rate-limit table were not opened.
+
+The attached 10 October notes (notebook, regulatory routes, product strategy) were read locally. Their “[opened]” tags are those notes’ claims. This pass did not re-download the FDA PDFs or the ClinVar FTP listing.
+
 ## Totals
 
-- Exa attempts: 8, all empty. Unchanged.
-- Web searches that ran: 106 from the ranker research + 13 from the correlator reference pass = **119**.
-- Page fetches reported by the ranker subagents: **119**. The redesign pass does not add a second page-fetch count.
-- Download and API batches: **32**. Unchanged. No new zip or obo download.
+- Exa attempts: 8 from the ranker research + 1 from this pass = **9**, all empty.
+- Web searches that ran: 106 from the ranker research + 13 from the correlator reference pass + 5 from this pass = **124**.
+- Page fetches reported by the ranker subagents: **119**. Later passes do not add a second page-fetch census. This pass’s searches stored full text for some hits in a scratch directory that is not committed.
+- Download and API batches: **32**. Unchanged.
 
-Padding this log with repeat queries would not make the census more true. The total that ran remains 119 web searches, 119 subagent page fetches from the first research pass, 32 download or API batches, and 8 failed Exa attempts.
+Padding this log with repeat queries would not make the census more true. The total that ran remains 124 web searches, 119 subagent page fetches from the first research pass, 32 download or API batches, and 9 failed Exa attempts.
