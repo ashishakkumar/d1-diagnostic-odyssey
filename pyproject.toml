@@ -5,12 +5,12 @@ requires-python = ">=3.12"
 description = "Safe-core foundation. For research use only. Not for use in diagnostic procedures."
 
 [tool.pytest.ini_options]
-pythonpath = ["contracts/src", "services/api"]
+pythonpath = ["contracts/src", "services/api", "eval"]
 testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-src = ["contracts/src", "services/api", "tests"]
+src = ["contracts/src", "services/api", "tests", "eval"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

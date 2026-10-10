@@ -3,7 +3,7 @@ export DATABASE_URL
 
 VENV := .venv/bin
 
-.PHONY: setup lint test db-up db-reset generate
+.PHONY: setup lint test db-up db-reset generate eval-download eval-store
 
 setup:
 	python3 -m venv .venv
@@ -45,11 +45,18 @@ db-reset: db-up
 	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f db/002_gate.sql
 
 lint:
-	$(VENV)/ruff check contracts services tests
-	$(VENV)/ruff format --check contracts services tests
+	$(VENV)/ruff check contracts services tests eval
+	$(VENV)/ruff format --check contracts services tests eval
 	npm --prefix contracts/ts run lint
 	npm --prefix apps/web run lint
 
 test: db-reset
 	npm --prefix contracts/ts run build
 	$(VENV)/pytest
+
+eval-download:
+	mkdir -p data/eval
+	PYTHONPATH=eval $(VENV)/python -m d1_eval download --dest data/eval
+
+eval-store: eval-download
+	PYTHONPATH=eval $(VENV)/python -m d1_eval store --data data/eval --out data/eval/results.md

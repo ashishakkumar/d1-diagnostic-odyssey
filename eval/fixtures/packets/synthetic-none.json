@@ -1,0 +1,68 @@
+{
+  "id": "synthetic-none",
+  "subject": {
+    "id": "synthetic-subject-none"
+  },
+  "phenotypicFeatures": [
+    {
+      "type": {
+        "id": "HP:0009998",
+        "label": "Synthetic unmatched term"
+      }
+    }
+  ],
+  "interpretations": [
+    {
+      "id": "synthetic-none-interp",
+      "progressStatus": "SOLVED",
+      "diagnosis": {
+        "disease": {
+          "id": "SYN:ALPHA",
+          "label": "SYN:ALPHA"
+        },
+        "genomicInterpretations": [
+          {
+            "subjectOrBiosampleId": "synthetic-subject-none",
+            "interpretationStatus": "CAUSATIVE",
+            "variantInterpretation": {
+              "variationDescriptor": {
+                "id": "synthetic-none-var",
+                "geneContext": {
+                  "valueId": "HGNC:00001",
+                  "symbol": "SYN9"
+                },
+                "expressions": [
+                  {
+                    "syntax": "hgvs.c",
+                    "value": "NM_000000.1:c.1A>G"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "SYN:ALPHA",
+        "label": "SYN:ALPHA"
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "synthetic-fixture",
+    "resources": [
+      {
+        "id": "hp",
+        "name": "Human Phenotype Ontology",
+        "version": "test",
+        "namespacePrefix": "HP",
+        "iriPrefix": "http://purl.obolibrary.org/obo/HP_"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0.0"
+  }
+}
