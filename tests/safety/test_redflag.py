@@ -8,6 +8,12 @@ import pytest
 from d1_safety.redflag import footer_text, load_phrases, stop_screen
 from d1_safety.render import templates_dir
 
+
+@pytest.fixture(autouse=True)
+def _united_kingdom(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("D1_COUNTRY", "gb")
+
+
 # Bullets under "Examples of when to call 999", copied from the page opened
 # 10 October 2026. Not split, and not extended.
 CITED = [
@@ -37,7 +43,7 @@ def test_empty_phrase_list_fails(tmp_path: Path) -> None:
 
 
 def test_source_cites_the_page_that_was_opened() -> None:
-    data = tomllib.loads((templates_dir() / "red_flags_source.toml").read_text())
+    data = tomllib.loads((templates_dir() / "red_flags" / "gb" / "source.toml").read_text())
     assert data["url"] == (
         "https://www.londonambulance.nhs.uk/our-services/emergency-care/calling-999/"
     )

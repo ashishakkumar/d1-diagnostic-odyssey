@@ -7,6 +7,12 @@ import pytest
 from d1_safety.redflag import stop_screen
 from d1_safety.render import SafetyError, render
 
+
+@pytest.fixture(autouse=True)
+def _united_kingdom(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("D1_COUNTRY", "gb")
+
+
 _CASES = tomllib.loads((Path(__file__).parent / "redteam.toml").read_text())["case"]
 _ROW_KEYS = (
     "label",

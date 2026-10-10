@@ -1,7 +1,5 @@
 # Fixed sentences for the safe core. Slots are filled from pipeline rows.
-# Opened 10 October 2026: London Ambulance Service NHS Trust, "When to call 999",
-# https://www.londonambulance.nhs.uk/our-services/emergency-care/calling-999/
-# The two call-999 sentences below are copied from that page.
+# Country call lines and numbers live in templates/red_flags/<country>/source.toml.
 
 [questions_for_doctor]
 text = """You marked {label} ({hpo_id}) as {presence}. Ask a doctor what this means for you. This page does not answer that. This is not a diagnosis."""
@@ -29,4 +27,4 @@ text = """On {report_date} the lab wrote this for {gene_symbol}: "{lab_words}". 
 lab_words = "lab"
 
 [emergency_footer]
-text = """This page is not for an emergency. You should only call 999 if it's a life-threatening emergency. You can call an ambulance by using 999 or 112. For research use only. Not for use in diagnostic procedures. This is not a diagnosis."""
+text = """This page is not for an emergency. For research use only. Not for use in diagnostic procedures. This is not a diagnosis."""

@@ -6,3 +6,5 @@ status = "cited"
 phrases = "Bullet list under Examples of when to call 999, copied as written. Bullets were not split."
 call_sentence = "You should only call 999 if it's a life-threatening emergency."
 number_sentence = "You can call an ambulance by using 999 or 112."
+numbers = ["999", "112"]
+stop = "Stop. Your words match an example on the London Ambulance Service page: {phrase}. You should only call 999 if it's a life-threatening emergency. You can call an ambulance by using 999 or 112."

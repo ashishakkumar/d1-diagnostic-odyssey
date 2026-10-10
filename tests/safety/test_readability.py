@@ -1,7 +1,8 @@
 """Flesch-Kincaid grade on the templates. The ceiling is the CDC 8th-grade line."""
 
+import pytest
 from d1_safety.readability import CEILING, SOURCE, grade, template_grades
-from d1_safety.render import template_text
+from d1_safety.redflag import footer_text
 
 CALL = "You should only call 999 if it's a life-threatening emergency."
 NUMBER = "You can call an ambulance by using 999 or 112."
@@ -38,7 +39,8 @@ def test_a_dense_paragraph_scores_above_the_ceiling() -> None:
     assert grade(hard) > CEILING
 
 
-def test_cited_emergency_sentences_stay_verbatim() -> None:
-    footer = template_text("emergency_footer")
+def test_cited_emergency_sentences_stay_verbatim(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("D1_COUNTRY", "gb")
+    footer = footer_text()
     assert CALL in footer
     assert NUMBER in footer

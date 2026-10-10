@@ -5,8 +5,10 @@ Exit 1 when a never-say rule, an empty phrase list, or a grade fails.
 Web and scoring code can call `d1_safety.scan`. This module is `make safety-scan`.
 """
 
-from d1_safety.readability import CEILING, template_grades
-from d1_safety.redflag import load_phrases, stop_template
+import os
+
+from d1_safety.readability import CEILING, grade, prose_for_grade, template_grades
+from d1_safety.redflag import countries, footer_text, load_phrases, stop_template
 from d1_safety.render import SafetyError, render, templates
 from d1_safety.scan import scan
 
@@ -43,15 +45,36 @@ _FIXTURES: dict[str, dict] = {
 }
 
 
+def _grade(code: str, name: str, text: str, problems: list[str]) -> None:
+    found = scan(text)
+    if found:
+        problems.append(f"{code} {name}: {', '.join(found)}")
+    score = grade(prose_for_grade(text))
+    if score > CEILING:
+        problems.append(f"{code} {name} grade {score:.2f} is above {CEILING}")
+
+
+def _check_country(code: str, problems: list[str]) -> None:
+    os.environ["D1_COUNTRY"] = code
+    try:
+        load_phrases()
+    except ValueError as exc:
+        problems.append(f"{code}: {exc}")
+    _grade(code, "stop_screen", stop_template(), problems)
+    try:
+        footer = footer_text()
+    except RuntimeError as exc:
+        problems.append(f"{code} emergency_footer: {exc}")
+    else:
+        _grade(code, "emergency_footer", footer, problems)
+
+
 def main() -> int:
     problems: list[str] = []
     for template_id, item in templates().items():
         found = scan(item["text"])
         if found:
             problems.append(f"{template_id}: {', '.join(found)}")
-    found = scan(stop_template())
-    if found:
-        problems.append(f"stop_screen: {', '.join(found)}")
     for template_id, row in _FIXTURES.items():
         try:
             render(template_id, row)
@@ -59,11 +82,18 @@ def main() -> int:
             problems.append(f"render {template_id}: {', '.join(exc.rules)}")
         except ValueError as exc:
             problems.append(f"render {template_id}: {exc}")
+    saved = os.environ.get("D1_COUNTRY")
     try:
-        load_phrases()
-    except ValueError as exc:
-        problems.append(str(exc))
+        for code in countries():
+            _check_country(code, problems)
+    finally:
+        if saved is None:
+            os.environ.pop("D1_COUNTRY", None)
+        else:
+            os.environ["D1_COUNTRY"] = saved
     for name, score in template_grades().items():
+        if name in {"stop_screen", "emergency_footer"}:
+            continue
         if score > CEILING:
             problems.append(f"{name} grade {score:.2f} is above {CEILING}")
     if problems:
