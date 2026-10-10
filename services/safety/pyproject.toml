@@ -1,0 +1,14 @@
+[project]
+name = "d1-safety"
+version = "0.0.1"
+description = "Fixed sentences and the never-say scanner. For research use only. Not for use in diagnostic procedures."
+requires-python = ">=3.12"
+dependencies = ["textstat>=0.7.7"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["d1_safety*"]

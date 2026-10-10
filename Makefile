@@ -3,12 +3,12 @@ export DATABASE_URL
 
 VENV := .venv/bin
 
-.PHONY: setup lint test db-up db-reset generate
+.PHONY: setup lint test db-up db-reset generate safety-scan
 
 setup:
 	python3 -m venv .venv
 	$(VENV)/pip install -U pip
-	$(VENV)/pip install -e contracts -e services/api pytest ruff 'datamodel-code-generator>=0.26'
+	$(VENV)/pip install -e contracts -e services/api -e services/safety pytest ruff 'datamodel-code-generator>=0.26'
 	npm install --prefix contracts/ts
 	npm install --prefix apps/web
 	$(MAKE) generate
@@ -53,3 +53,6 @@ lint:
 test: db-reset
 	npm --prefix contracts/ts run build
 	$(VENV)/pytest
+
+safety-scan:
+	PYTHONPATH=services/safety $(VENV)/python -m d1_safety

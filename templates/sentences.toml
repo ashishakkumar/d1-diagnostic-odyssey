@@ -1,0 +1,32 @@
+# Fixed sentences for the safe core. Slots are filled from pipeline rows.
+# Opened 10 October 2026: London Ambulance Service NHS Trust, "When to call 999",
+# https://www.londonambulance.nhs.uk/our-services/emergency-care/calling-999/
+# The two call-999 sentences below are copied from that page.
+
+[questions_for_doctor]
+text = """You marked {label} ({hpo_id}) as {presence}. Ask a doctor what this means for you. This page does not answer that. This is not a diagnosis."""
+
+[reason_marked_excluded]
+text = """You marked {label} ({hpo_id}) as {presence}. This is a reason it may not fit. This is not a diagnosis."""
+
+[reason_no_public_row]
+text = """The file {source} {version} has no line for {subject_key}. This is a reason it may not fit. This is not a diagnosis."""
+
+[public_database_change]
+text = """The public file {source} {version} changed its text for {subject_key}. The old public file text was "{previous_text}". The new public file text was "{current_text}". This tool did not write those words. This is not a diagnosis."""
+
+[public_database_change.quotes]
+previous_text = "public_file"
+current_text = "public_file"
+
+[not_confident_yet]
+text = """This page is not confident yet. This record has {confirmed_count} confirmed terms. There is no clear note to show. This does not mean you are well. Ask a doctor. This is not a diagnosis."""
+
+[lab_report_words]
+text = """On {report_date} the lab wrote this for {gene_symbol}: "{lab_words}". Those are the lab's words. This tool did not pick them. This is not a diagnosis."""
+
+[lab_report_words.quotes]
+lab_words = "lab"
+
+[emergency_footer]
+text = """This page is not for an emergency. You should only call 999 if it's a life-threatening emergency. You can call an ambulance by using 999 or 112. For research use only. Not for use in diagnostic procedures. This is not a diagnosis."""
