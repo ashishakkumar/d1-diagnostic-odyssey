@@ -8,7 +8,7 @@ VENV := .venv/bin
 setup:
 	python3 -m venv .venv
 	$(VENV)/pip install -U pip
-	$(VENV)/pip install -e contracts -e services/api pytest ruff 'datamodel-code-generator>=0.26'
+	$(VENV)/pip install -e contracts -e services/api -e services/scoring pytest ruff 'datamodel-code-generator>=0.26'
 	npm install --prefix contracts/ts
 	npm install --prefix apps/web
 	$(MAKE) generate

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "source": "orphanet-en_product4",
+    "version": "2026-06-23-synthetic",
+    "subject_key": "ORPHA:9000001|HP:0001166",
+    "orphanet_id": "ORPHA:9000001",
+    "mondo_id": "MONDO:8000001",
+    "hpo_id": "HP:0001166",
+    "bin": "obligate"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000102",
+    "source": "orphanet-en_product4",
+    "version": "2026-06-23-synthetic",
+    "subject_key": "ORPHA:9000001|HP:0000272",
+    "orphanet_id": "ORPHA:9000001",
+    "mondo_id": "MONDO:8000001",
+    "hpo_id": "HP:0000272",
+    "bin": "very_frequent"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000103",
+    "source": "orphanet-en_product4",
+    "version": "2026-06-23-synthetic",
+    "subject_key": "ORPHA:9000002|HP:0001166",
+    "orphanet_id": "ORPHA:9000002",
+    "mondo_id": "MONDO:8000002",
+    "hpo_id": "HP:0001166",
+    "bin": "very_rare"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000104",
+    "source": "orphanet-en_product4",
+    "version": "2026-06-23-synthetic",
+    "subject_key": "ORPHA:9000002|HP:0000272",
+    "orphanet_id": "ORPHA:9000002",
+    "mondo_id": "MONDO:8000002",
+    "hpo_id": "HP:0000272",
+    "bin": "excluded"
+  }
+]

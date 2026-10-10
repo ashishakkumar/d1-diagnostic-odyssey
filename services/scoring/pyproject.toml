@@ -1,0 +1,19 @@
+[project]
+name = "d1-scoring"
+version = "0.0.1"
+description = "Classical catalogue comparison. For research use only. Not for use in diagnostic procedures."
+requires-python = ">=3.12"
+dependencies = [
+  "d1-contracts",
+  "phenopackets>=2.0.2",
+  "pronto>=2.5",
+  "pydantic>=2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scoring*"]
