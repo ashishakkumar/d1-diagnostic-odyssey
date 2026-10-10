@@ -1,0 +1,16 @@
+format-version: 1.2
+data-version: hp/releases/2026-09-01
+property_value: owl:versionInfo "2026-09-01" xsd:string
+
+[Term]
+id: HP:0000001
+name: All
+
+[Typedef]
+id: part_of
+name: part of
+
+[Term]
+id: HP:0001250
+name: Seizure
+is_obsolete: true
