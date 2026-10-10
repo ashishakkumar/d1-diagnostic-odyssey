@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://d1.local/contracts/pipeline.schema.json",
+  "title": "Pipeline",
+  "description": "One pipeline contract. The case is a Phenopacket v2 document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case",
+    "hpo_term_drafts",
+    "accepted_terms",
+    "lab_reported_variants",
+    "evidence",
+    "change_events",
+    "approvals"
+  ],
+  "properties": {
+    "case": {"$ref": "#/$defs/PhenopacketCase"},
+    "hpo_term_drafts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/HpoTermDraft"}
+    },
+    "accepted_terms": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/AcceptedTerm"}
+    },
+    "lab_reported_variants": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/LabReportedVariant"}
+    },
+    "evidence": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/EvidenceRow"}
+    },
+    "change_events": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/ChangeEvent"}
+    },
+    "approvals": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/ApprovalRecord"}
+    }
+  },
+  "$defs": {
+    "PhenopacketCase": {
+      "title": "PhenopacketCase",
+      "description": "Phenopacket Schema v2 JSON. This contract does not redefine it.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "metaData"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "metaData": {"$ref": "#/$defs/PhenopacketMeta"}
+      }
+    },
+    "PhenopacketMeta": {
+      "title": "PhenopacketMeta",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["phenopacketSchemaVersion"],
+      "properties": {
+        "phenopacketSchemaVersion": {"type": "string", "pattern": "^2"}
+      }
+    },
+    "HpoTermDraft": {
+      "title": "HpoTermDraft",
+      "description": "An HPO term proposed for one case. It is not an accepted fact until an approval record exists.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "case_id", "hpo_id", "label", "presence"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "case_id": {"type": "string", "format": "uuid"},
+        "hpo_id": {"type": "string", "pattern": "^HP:[0-9]{7}$"},
+        "label": {"type": "string", "minLength": 1},
+        "presence": {"enum": ["present", "excluded", "uncertain"]},
+        "quote": {"type": "string"},
+        "span_start": {"type": "integer", "minimum": 1},
+        "span_end": {"type": "integer", "minimum": 1}
+      }
+    },
+    "AcceptedTerm": {
+      "title": "AcceptedTerm",
+      "description": "An HPO term a person confirmed. Uncertain is not an accepted presence.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "case_id", "draft_id", "hpo_id", "label", "presence", "approval_id"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "case_id": {"type": "string", "format": "uuid"},
+        "draft_id": {"type": "string", "format": "uuid"},
+        "hpo_id": {"type": "string", "pattern": "^HP:[0-9]{7}$"},
+        "label": {"type": "string", "minLength": 1},
+        "presence": {"enum": ["present", "excluded"]},
+        "approval_id": {"type": "string", "format": "uuid"}
+      }
+    },
+    "LabReportedVariant": {
+      "title": "LabReportedVariant",
+      "description": "A variant typed from a lab report. lab_words are that report's words.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "case_id", "gene_symbol", "lab_words", "report_date", "variation"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "case_id": {"type": "string", "format": "uuid"},
+        "gene_symbol": {"type": "string", "minLength": 1},
+        "lab_words": {"type": "string", "minLength": 1},
+        "report_date": {"type": "string", "format": "date"},
+        "quote": {"type": "string"},
+        "span_start": {"type": "integer", "minimum": 1},
+        "span_end": {"type": "integer", "minimum": 1},
+        "variation": {"$ref": "#/$defs/VariationDescriptor"}
+      }
+    },
+    "VariationDescriptor": {
+      "title": "VariationDescriptor",
+      "description": "GA4GH Phenopackets v2 VariationDescriptor JSON, checked by the phenopackets library.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "EvidenceRow": {
+      "title": "EvidenceRow",
+      "description": "A cited source and the version that was read. Not a classification.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "version"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "source": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "subject_key": {"type": "string"}
+      }
+    },
+    "ChangeEvent": {
+      "title": "ChangeEvent",
+      "description": "A difference between two pinned public files. It stays a draft until a person confirms it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "case_id", "source", "version", "subject_key"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "case_id": {"type": "string", "format": "uuid"},
+        "source": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "subject_key": {"type": "string", "minLength": 1},
+        "previous_text": {"type": "string"},
+        "current_text": {"type": "string"},
+        "observed_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ApprovalRecord": {
+      "title": "ApprovalRecord",
+      "description": "One decision. reviewer is copied from the database session. Clients do not send it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "draft_id", "reviewer", "decision", "body_hash", "decided_at"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "draft_id": {"type": "string", "format": "uuid"},
+        "reviewer": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["approve", "reject"]},
+        "body_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "decided_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ApprovalRequest": {
+      "title": "ApprovalRequest",
+      "description": "What a client may send to the gate. There is no reviewer field.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draft_id", "decision", "seen_hash"],
+      "properties": {
+        "draft_id": {"type": "string", "format": "uuid"},
+        "decision": {"enum": ["approve", "reject"]},
+        "seen_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

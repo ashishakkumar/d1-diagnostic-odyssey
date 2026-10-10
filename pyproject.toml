@@ -1,0 +1,16 @@
+[project]
+name = "d1-foundation"
+version = "0.0.0"
+requires-python = ">=3.12"
+description = "Safe-core foundation. For research use only. Not for use in diagnostic procedures."
+
+[tool.pytest.ini_options]
+pythonpath = ["contracts/src", "services/api"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["contracts/src", "services/api", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

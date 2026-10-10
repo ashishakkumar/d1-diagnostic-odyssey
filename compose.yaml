@@ -1,0 +1,15 @@
+# Safe-core database only. The notebook and the API container are later.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: d1
+      POSTGRES_PASSWORD: d1
+      POSTGRES_DB: d1
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U d1 -d d1"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
