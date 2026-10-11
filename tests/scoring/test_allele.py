@@ -1,6 +1,7 @@
 """The population prior is opt-in and does not move the catalogue comparison."""
 
 import json
+import subprocess
 from pathlib import Path
 
 from scoring.allele import population_prior
@@ -36,6 +37,13 @@ def test_a_missing_variant_says_the_prior_is_absent() -> None:
     prior = population_prior("NM_000000.0:c.2T>A", ROWS, opted_in=True)
     assert prior["found"] is False
     assert "absent" in prior["limits"]
+
+
+def test_the_allele_fixture_is_outside_the_download_ignore() -> None:
+    path = ROOT / "services" / "api" / "app" / "data" / "allele_frequencies.json"
+    assert path.is_file()
+    ignored = subprocess.run(["git", "check-ignore", "-q", str(path)], cwd=ROOT)
+    assert ignored.returncode == 1
 
 
 def test_the_catalogue_json_does_not_change_when_the_prior_is_read() -> None:

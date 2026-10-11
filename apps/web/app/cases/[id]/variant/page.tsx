@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { VariantForm, type VariantFields } from "@/components/variant-form";
 import type { ApprovalRequest } from "@/src/index";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type PendingVariant = VariantFields & { draft_id: string; seen_hash: string };
 
@@ -24,6 +24,10 @@ export default function VariantPage() {
   const params = useParams<{ id: string }>();
   const [pending, setPending] = useState<PendingVariant | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   async function save(fields: VariantFields) {
     const response = await fetch(`/api/cases/${params.id}/variants`, {
@@ -67,6 +71,7 @@ export default function VariantPage() {
       <Button
         type="button"
         variant="secondary"
+        disabled={!ready}
         onClick={() =>
           void save({
             gene_symbol: "FBN1",

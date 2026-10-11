@@ -1,0 +1,11 @@
+[
+  {
+    "source": "fixture-allele-frequency",
+    "version": "2026-10-11-fixture",
+    "variant": "NM_000138.5:c.1A>G",
+    "gene_symbol": "FBN1",
+    "population": "fixture-mixed",
+    "allele_frequency": 0.00012,
+    "limits": "Checked-in fixture standing in for a public allele-frequency file. This build did not call gnomAD or ClinVar. A frequency is not applied as a rarity rule, and it does not change the catalogue comparison."
+  }
+]

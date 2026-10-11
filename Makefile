@@ -86,4 +86,4 @@ demo: db-reset
 	PYTHONPATH="$(API_PATH)" $(VENV)/python scripts/demo.py
 
 e2e: db-reset
-	npm --prefix apps/web exec -- playwright test
+	cd apps/web && npx playwright test

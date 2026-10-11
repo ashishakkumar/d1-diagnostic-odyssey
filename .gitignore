@@ -11,6 +11,8 @@ dist/
 .env
 .env.*
 .coverage
-data/
+/data/
 uploads/
 *.key
+test-results/
+playwright-report/

@@ -82,7 +82,10 @@ def allele_rows() -> list[dict]:
 
 def report_for(accepted: list[tuple[str, str]]) -> dict:
     """`to_public` evidence and margin, in the shared report shape."""
-    public = to_public(catalogue_score(accepted, frequency_rows()))
+    # Decision ids tie when one transaction approves several rows. Sort so the
+    # comparison does not shuffle between two cases with the same terms.
+    ordered = sorted(accepted, key=lambda item: (item[0], item[1]))
+    public = to_public(catalogue_score(ordered, frequency_rows()))
     body: dict = {
         "evidence": [
             {

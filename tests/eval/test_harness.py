@@ -14,9 +14,11 @@ from d1_eval.harness import (
     TermOverlapScorer,
     calibration_curve,
     check_store_file,
+    cohort_split,
     count_terms,
     degrade,
     gene_topk,
+    held_out_lines,
     holdout_from_counts,
     is_no_confident,
     load_cases,
@@ -266,8 +268,6 @@ def test_time_split_counts_packet_dates_only() -> None:
 
 
 def test_held_out_split_uses_the_packet_id_and_prints_both_cohorts() -> None:
-    from d1_eval.harness import cohort_split, held_out_lines
-
     assert cohort_split("synthetic-alpha") == cohort_split("synthetic-alpha")
     assert cohort_split("synthetic-alpha") in {"train", "test"}
     labels = {cohort_split(f"packet-{i}") for i in range(40)}

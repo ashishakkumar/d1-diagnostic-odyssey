@@ -12,22 +12,22 @@ test("five synthetic cases, the comparison, and the stop screen", async ({ page 
 
   await page.getByRole("button", { name: "Load Separated rows" }).click();
   await expect(page.getByTestId("comparison")).toContainText("ORPHA:9000001");
-  await expect(page.getByText("ratio of zero")).toBeVisible();
-  await expect(page.getByText("long for the hand")).toBeVisible();
+  await expect(page.getByText("ratio of zero").first()).toBeVisible();
+  await expect(page.getByText("long for the hand").first()).toBeVisible();
   await expect(page.getByRole("contentinfo")).toContainText("112");
   await expect(page.getByText("This is not a diagnosis").first()).toBeVisible();
   await page.screenshot({ path: path.join(shots, "02-separated.png"), fullPage: true });
 
   await page.goto("/");
   await page.getByRole("button", { name: "Load No separated row" }).click();
-  await expect(page.getByText("did not separate a first row")).toBeVisible();
-  await expect(page.getByText("does not mean you are well")).toBeVisible();
+  await expect(page.getByText("did not separate a first row").first()).toBeVisible();
+  await expect(page.getByText("does not mean you are well").first()).toBeVisible();
   await page.screenshot({ path: path.join(shots, "03-abstain.png"), fullPage: true });
 
   await page.goto("/");
   await page.getByRole("button", { name: "Load Stable at both ends" }).click();
   await expect(page.getByTestId("comparison")).toContainText("ORPHA:9000011");
-  await expect(page.getByText(/Margin /)).toBeVisible();
+  await expect(page.getByText(/Margin /).first()).toBeVisible();
   await page.screenshot({ path: path.join(shots, "04-stable.png"), fullPage: true });
 
   await page.goto("/");
@@ -40,7 +40,7 @@ test("five synthetic cases, the comparison, and the stop screen", async ({ page 
 
   await page.goto("/");
   await page.getByRole("button", { name: "Load No dose on this page" }).click();
-  await expect(page.getByText("does not choose a dose")).toBeVisible();
+  await expect(page.getByText("does not choose a dose").first()).toBeVisible();
   await page.screenshot({ path: path.join(shots, "06-limits.png"), fullPage: true });
 
   await page.getByRole("link", { name: "Lab variant" }).click();

@@ -178,7 +178,7 @@ def create_app() -> FastAPI:
                 raise _gate_error(exc) from exc
         return DemoLoadedOut(slug=slug, case_id=case_id)
 
-    @app.get("/cases/{case_id}/report", response_model=Report)
+    @app.get("/cases/{case_id}/report", response_model=Report, response_model_exclude_unset=True)
     def case_report(case_id: UUID) -> dict:
         accepted = [
             (str(body["hpo_id"]), str(body["presence"]))

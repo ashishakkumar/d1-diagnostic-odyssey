@@ -194,8 +194,10 @@ def _frequency_rows(
     note = (
         "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
         "Abstentions are misses. The scorer thresholds were not changed for this run. "
-        "A present term with no exact row uses the nearest annotated ancestor below "
-        "HP:0000001 and HP:0000118. The background stays 0.05. "
+        "A missing row stays the flat unannotated ratio, 0.01 / 0.05. "
+        "An ancestor climb to the nearest annotated parent below HP:0000001 and HP:0000118 "
+        "was measured on this pin and lowered full-set top-1 from 1292/4815 to 841/4815, "
+        "so this run and the notebook do not climb. The background stays 0.05. "
         "The notebook ships this scorer. Term-overlap-loo copies terms from other packets "
         "in this release, so it uses the labels the score is judged against. It is not shipped."
     )
@@ -207,8 +209,7 @@ def _frequency_rows(
     try:
         kept = {disease: mapping[disease] for disease in unique}
         freq_rows, orpha_to_disease = frequency_table(xml_path, kept)
-        parent_ids = {hpo_id: pair[0] for hpo_id, pair in parents.items()}
-        scorer = FrequencyBinScorer(freq_rows, orpha_to_disease, parent_ids)
+        scorer = FrequencyBinScorer(freq_rows, orpha_to_disease)
         ranked_rows = []
         for level in LEVELS:
             print(f"frequency level={level}", flush=True)

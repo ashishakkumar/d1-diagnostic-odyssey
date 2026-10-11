@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test } from "vitest";
+import { renderToString } from "react-dom/server";
+import { expect, test, vi } from "vitest";
 import type { ApprovalRequest } from "../../apps/web/src/index.ts";
 import { CaseList } from "../../apps/web/components/case-list.tsx";
 import { SessionForm } from "../../apps/web/components/session-form.tsx";
@@ -9,6 +10,7 @@ import { SymptomReview } from "../../apps/web/components/term-accept.tsx";
 import { TimelineList } from "../../apps/web/components/timeline-list.tsx";
 import { VariantForm } from "../../apps/web/components/variant-form.tsx";
 import { NotebookShell } from "../../apps/web/components/notebook-shell.tsx";
+import VariantPage from "../../apps/web/app/cases/[id]/variant/page.tsx";
 
 const TERM = {
   draft_id: "00000000-0000-4000-8000-0000000000b1",
@@ -146,4 +148,39 @@ test("the summary preview shows the template text and a PDF link", () => {
     "href",
     "/api/cases/1/summary.pdf",
   );
+});
+
+test("the warning-sign button is disabled until the page is mounted", () => {
+  const html = renderToString(<VariantPage />);
+  const button = new DOMParser()
+    .parseFromString(html, "text/html")
+    .querySelector("button[type='button']");
+  expect(button?.textContent).toBe("Try a warning-sign phrase");
+  expect(button?.hasAttribute("disabled")).toBe(true);
+});
+
+test("a warning-sign phrase shows the stop screen", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({
+      status: 409,
+      ok: false,
+      json: async () => ({
+        detail: {
+          title: "Stop",
+          body: "Stop. Your words match this warning sign: Unconsciousness.",
+          footer: "Call 112.",
+        },
+      }),
+    })),
+  );
+  try {
+    render(<VariantPage />);
+    await user.click(screen.getByRole("button", { name: "Try a warning-sign phrase" }));
+    expect(await screen.findByText(/Unconsciousness/)).toBeInTheDocument();
+    expect(screen.getByText(/Call 112/)).toBeInTheDocument();
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
