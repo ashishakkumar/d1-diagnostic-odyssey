@@ -31,7 +31,8 @@ export default function HomePage() {
         <p className="font-ui text-xs uppercase tracking-widest text-terracotta">Synthetic notebook</p>
         <h1 className="font-display text-5xl leading-tight">Pick a note. The software does the rest.</h1>
         <p>
-          One step. No sign-in, no blank notebook, no symptom form. This is not a diagnosis.
+          One click starts the file. No sign-in, no blank notebook, no symptom form. This is not a
+          diagnosis.
         </p>
       </header>
       <section className="space-y-3">

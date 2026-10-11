@@ -17,7 +17,10 @@ test("one step, then the software reads a synthetic note", async ({ page }) => {
   await expect(page.getByTestId("stage-map")).toContainText("Map");
   await expect(page.getByTestId("stage-match")).toContainText("Match");
   await expect(page.getByTestId("stage-rank")).toContainText("Rank");
+  await expect(page.getByTestId("stage-read")).toContainText("Deterministic");
   await expect(page.getByTestId("actor-software").first()).toContainText("Software, not a person.");
+  await expect(page.getByTestId("stage-caption")).toContainText("What the software did");
+  await expect(page.getByTestId("stage-caption")).toContainText("What you decide");
   await expect(page.getByRole("button", { name: "Confirm these terms" })).toBeVisible({
     timeout: 15_000,
   });
@@ -28,6 +31,9 @@ test("one step, then the software reads a synthetic note", async ({ page }) => {
   await expect(page.getByTestId("ranks")).toContainText("ORPHA:9000001");
   await expect(page.getByTestId("questions")).toContainText("Ask a doctor");
   await expect(page.getByTestId("actor-person")).toContainText("You decide");
+  await expect(page.getByTestId("impact")).toContainText("1 click");
+  await expect(page.getByTestId("impact")).toContainText("3 actions");
+  await expect(page.getByTestId("impact")).not.toContainText("language model");
   await expect(page.getByText("This is not a diagnosis").first()).toBeVisible();
   await expect(page.getByRole("contentinfo")).toContainText("112");
   await page.getByRole("button", { name: "Confirm these terms" }).click();
@@ -37,6 +43,8 @@ test("one step, then the software reads a synthetic note", async ({ page }) => {
   await page.goto("/work?slug=abstain");
   await expect(page.getByTestId("abstain")).toContainText("Not enough signal", { timeout: 15_000 });
   await expect(page.getByText("does not mean you are well").first()).toBeVisible();
+  await expect(page.getByTestId("match-grid")).toContainText("ORPHA:9000026");
+  await expect(page.getByTestId("ranks")).toHaveCount(0);
   await page.screenshot({ path: path.join(shots, "03-abstain.png"), fullPage: true });
 
   await page.goto("/work?slug=stable");
