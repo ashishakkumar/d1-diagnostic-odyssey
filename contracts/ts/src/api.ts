@@ -51,7 +51,7 @@ export interface Report {
   evidence: TermEvidence[];
   leading_orphanet_id?: string | null;
   margin: number | null;
-  margin_reason?: string | null;
+  margin_reason?: "runner_up_ratio_is_zero" | null;
   probability?: number | null;
   reliability_curve?: ReliabilityPoint[] | null;
 }

@@ -3,7 +3,10 @@
 import json
 from pathlib import Path
 
-from d4_llm.gemini import choose_model, gemini_text
+import pytest
+
+from d4_llm.fallback import ReplayCache, SyntheticRejected, is_rate_limited
+from d4_llm.gemini import choose_model, complete_with_gemini, gemini_text, load_models
 
 
 class _Response:
@@ -80,8 +83,6 @@ def test_gemini_text_posts_the_chosen_model_and_keeps_the_key_out_of_the_body() 
 
 
 def test_a_429_from_gemini_is_a_rate_limit() -> None:
-    from d4_llm.fallback import is_rate_limited
-
     def post(_url: str, _headers: dict, _payload: dict) -> _Response:
         return _Response(429, text="RESOURCE_EXHAUSTED quota")
 
@@ -108,6 +109,147 @@ def test_non_synthetic_text_is_not_posted() -> None:
         assert "synthetic" in str(exc).casefold()
     else:
         raise AssertionError("expected RuntimeError")
+
+
+MODELS = "https://generativelanguage.googleapis.com/v1beta/models"
+FLASH = {
+    "name": "models/gemini-3.5-flash-lite",
+    "supportedGenerationMethods": ["generateContent"],
+}
+
+
+def test_load_models_follows_the_next_page_token() -> None:
+    pages = {
+        MODELS: {
+            "models": [
+                {
+                    "name": "models/gemini-2.5-flash-lite",
+                    "supportedGenerationMethods": ["generateContent"],
+                }
+            ],
+            "nextPageToken": "page-2",
+        },
+        f"{MODELS}?pageToken=page-2": {"models": [FLASH]},
+    }
+
+    def get(url: str, headers: dict) -> _Response:
+        assert headers["x-goog-api-key"] == "secret-key"
+        assert "secret-key" not in url
+        return _Response(200, pages[url])
+
+    rows = load_models("secret-key", get=get)
+    assert choose_model(rows) == "gemini-3.5-flash-lite"
+
+
+def _cache(tmp_path: Path) -> ReplayCache:
+    return ReplayCache(tmp_path / "replay.json")
+
+
+def test_complete_with_gemini_records_the_chosen_model(tmp_path: Path) -> None:
+    calls = {"post": 0}
+
+    def get(url: str, headers: dict) -> _Response:
+        assert headers["x-goog-api-key"] == "secret-key"
+        assert url == MODELS
+        return _Response(200, {"models": [FLASH]})
+
+    def post(url: str, headers: dict, payload: dict) -> _Response:
+        calls["post"] += 1
+        assert "openrouter" not in url
+        assert "secret-key" not in url
+        assert headers["x-goog-api-key"] == "secret-key"
+        assert "secret-key" not in json.dumps(payload)
+        return _Response(200, {"candidates": [{"content": {"parts": [{"text": "pong"}]}}]})
+
+    result = complete_with_gemini(
+        "SYNTHETIC-ONLY reply with pong",
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={"GEMINI_API_KEY": "secret-key", "OPENROUTER_API_KEY": "or-key"},
+        root=tmp_path,
+        get=get,
+        post=post,
+        sleep=lambda _seconds: None,
+    )
+    assert result.provider == "gemini"
+    assert result.model == "gemini-3.5-flash-lite"
+    assert result.text == "pong"
+    assert calls["post"] == 1
+
+
+def test_complete_with_gemini_uses_openrouter_after_a_429(tmp_path: Path) -> None:
+    def get(_url: str, _headers: dict) -> _Response:
+        return _Response(200, {"models": [FLASH]})
+
+    def post(url: str, _headers: dict, payload: dict) -> _Response:
+        if "generativelanguage.googleapis.com" in url:
+            return _Response(429, text="RESOURCE_EXHAUSTED")
+        assert str(payload["model"]).endswith(":free")
+        return _Response(200, {"choices": [{"message": {"content": "pong"}}]})
+
+    result = complete_with_gemini(
+        "SYNTHETIC-ONLY reply with pong",
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={
+            "GEMINI_API_KEY": "secret-key",
+            "OPENROUTER_API_KEY": "or-key",
+        },
+        root=tmp_path,
+        get=get,
+        post=post,
+        sleep=lambda _seconds: None,
+    )
+    assert result.provider == "openrouter"
+    assert result.model == "example/test:free"
+    assert result.text == "pong"
+
+
+def test_complete_with_gemini_without_a_key_does_not_call_http(tmp_path: Path) -> None:
+    def get(*_args: object) -> _Response:
+        raise AssertionError("get")
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("post")
+
+    result = complete_with_gemini(
+        "SYNTHETIC-ONLY reply with pong",
+        cache=_cache(tmp_path),
+        environ={},
+        root=tmp_path,
+        get=get,
+        post=post,
+        sleep=lambda _seconds: None,
+    )
+    assert result.provider == "gazetteer"
+    assert "pinned wording" in result.text
+    assert not (tmp_path / "replay.json").exists()
+    with pytest.raises(AssertionError, match="get"):
+        complete_with_gemini(
+            "SYNTHETIC-ONLY reply with pong",
+            cache=_cache(tmp_path),
+            environ={"GEMINI_API_KEY": "secret-key"},
+            root=tmp_path,
+            get=get,
+            post=post,
+            sleep=lambda _seconds: None,
+        )
+
+
+def test_complete_with_gemini_rejects_non_synthetic_text_before_listing_models(
+    tmp_path: Path,
+) -> None:
+    def get(*_args: object) -> _Response:
+        raise AssertionError("get")
+
+    with pytest.raises(SyntheticRejected):
+        complete_with_gemini(
+            "a real chart",
+            cache=_cache(tmp_path),
+            environ={"GEMINI_API_KEY": "secret-key"},
+            root=tmp_path,
+            get=get,
+        )
 
 
 def test_uploads_and_env_files_are_gitignored() -> None:

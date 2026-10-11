@@ -24,7 +24,7 @@ Two scores were compared on Phenopacket Store 0.1.27 (sha256 `d0c70005bb09b87035
 
 Term-overlap-loo is high because it reads HPO labels from other packets in the same release and leaves out only the packet being scored. That is label leakage, not an external catalogue. Its held-out row is still not independent: the catalogue for a test packet includes train packets. It is not shipped.
 
-Frequency-bin is the Orphanet phenotype-frequency catalogue. A missing row uses the flat unannotated ratio 0.01 / 0.05. This is the scorer the notebook ships. Exact-match full-set top-1 is 1292/4815 (top-3 1589/4815, top-10 1953/4815, no-confident 1653/4815). The held-out split is SHA-256 of the packet id, modulo 5, remainder 0 is test. It was not used to choose a threshold, a background, or a bin edge. Full top-1 is 1046/3890 on train and 246/925 on test, so the two cohorts agree. The other degradations are in `eval/RESULTS.md`.
+Frequency-bin is the Orphanet phenotype-frequency catalogue. A missing row uses the flat unannotated ratio 0.01 / 0.05. This is the scorer the notebook ships. Exact-match full-set top-1 is 1292/4815 (top-3 1589/4815, top-10 1953/4815, no-confident 1653/4815). The held-out split is SHA-256 of the packet id, modulo 5, remainder 0 is test. It was not used to choose a threshold, a background, or a bin edge. Full top-1 is 1046/3890 on train and 246/925 on test, so the two cohorts agree. The other degradations are in `eval/RESULTS.md`. `d1_eval store` prints those frequency-bin totals and a separate line labeled `term-overlap-loo`.
 
 An ancestor climb (depth 8, stop at HP:0000001 and HP:0000118) was measured on the same pin. Full-set top-1 fell from 1292/4815 to 841/4815 (top-3 1082/4815, top-10 1619/4815, no-confident 1634/4815). Held-out test top-1 under the climb was 178/925, below the exact-match test row of 246/925. Climbing replaces a missing specific row with a parent bin, which boosts diseases that annotate a broad parent. That hurt retrieval, so the notebook and `d1_eval store` do not pass a parent map into the scorer. The climb function remains for a caller that passes parents, and a unit test covers that path. Thresholds were not refit on either run.
 
@@ -34,7 +34,7 @@ Term-overlap-loo on the same pin, for comparison only: full-set top-1 3806/4815,
 
 `contracts/openapi.json` is generated from the FastAPI app. `contracts/ts/src/api.ts` is generated from that document. `tests/test_openapi.py` fails if either file drifts. The report response leaves unset fields out, so a catalogue comparison does not carry a `probability` without a reliability curve. `margin` is still present when it is null, and `margin_reason` says `runner_up_ratio_is_zero` when the runner-up lower ratio is 0.
 
-`services/llm` calls Gemini first. The model id is the newest flash-lite id returned by `GET https://generativelanguage.googleapis.com/v1beta/models`, not a constant in the client. OpenRouter is used only after a Gemini rate limit, and only for model ids that end in `:free`, with backoff and a SHA-256 replay cache. Text must contain `SYNTHETIC-ONLY` or the client refuses it before any HTTP call. With no fallback key, or no `OPENROUTER_FREE_MODELS` list of `:free` ids, a rate limit degrades to pinned wording and does not call OpenRouter. Keys stay in gitignored `uploads/` and `.env` files. One opt-in smoke (`D4_LLM_LIVE=1`) completed a single `:free` fallback call. The other LLM tests use stubs.
+`services/llm` calls Gemini first through `complete_with_gemini`. That function reads `GEMINI_API_KEY` or `GOOGLE_API_KEY`, follows every `nextPageToken` on `GET https://generativelanguage.googleapis.com/v1beta/models`, and chooses the newest flash-lite id from that list. The chosen id is stored on the completion. OpenRouter is used only after a Gemini 429 or `RESOURCE_EXHAUSTED`, and only for model ids that end in `:free`, with backoff and a SHA-256 replay cache. Text must contain `SYNTHETIC-ONLY` or the client refuses it before any HTTP call. With no Gemini key, no fallback key, or no `OPENROUTER_FREE_MODELS` list of `:free` ids, the client returns pinned wording, records provider `gazetteer`, and does not call OpenRouter. A gazetteer sentence is logged and is not written into the replay cache, so a key added later is not hidden. Keys stay in gitignored `uploads/` and `.env` files. One opt-in smoke (`D4_LLM_LIVE=1`) completed a single `:free` fallback call. The other LLM tests use stubs.
 
 Synthetic open-band note segmentation, and the replay fixtures for those nine notes, were removed. They came from a paperwork task sent to this repo by mistake. They do not ground catalogue terms.
 
@@ -53,10 +53,16 @@ Fixed while finishing:
 - The store command was scoring the ancestor climb while the notebook scored exact rows. The command now scores the shipped exact-match scorer. The climb result is recorded above and in the results note.
 - An inline import in the held-out test was moved to the top of the file.
 - A warning-sign click whose request never reached the API left the page blank. The page now says the notebook cannot reach the API.
+- An abstained catalogue comparison showed `Margin 1.000` while the summary already omitted it. The panel now hides the number when the report abstains. The API still returns margin 1 for that tie.
+- Playwright's web server command changed directory from `apps/web` with `cd ../..`, which is outside the repo. It now runs `.venv/bin/python scripts/demo.py` with the repo root as the working directory.
+- `d1_eval store` printed the term-overlap-loo top-1 without a label. The summary now names frequency-bin first and labels the stand-in.
+- The generated TypeScript client treated OpenAPI `const` as `string`. `margin_reason` is the literal `runner_up_ratio_is_zero` or null.
+- A Gemini success did not record the model id, and nothing read `GEMINI_API_KEY`. `complete_with_gemini` lists the models pages, calls the chosen id, and stores it. A missing key degrades without HTTP.
 
 Left as they are:
 
 - The stop paragraph repeats the 112 sentence that is already in the page footer. The stop template and the footer both carry that sentence. The screen still names the matched phrase and does not save the draft.
 - The package is still called `d4_llm`. Renaming it would not change the Gemini-then-OpenRouter behavior.
 - `eval/RESULTS.md` keeps one calibration row per distinct score. That table is long. It is the existing harness format.
-- Term-overlap's test cohort is reported so the leakage is visible. It is not an independent catalogue, and it is not the shipped scorer.
+- Term-overlap's held-out row stays in `eval/RESULTS.md` so the leakage is visible. It is not an independent catalogue, and it is not the shipped scorer.
+- `FrequencyBinScorer` still accepts an optional parent map. The notebook and `d1_eval store` do not pass one. An empty map does not climb. The measured climb stays rejected.

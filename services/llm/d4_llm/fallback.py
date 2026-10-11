@@ -97,11 +97,8 @@ def assert_synthetic(prompt: str) -> None:
 
 
 def is_rate_limited(exc: BaseException) -> bool:
-    text = f"{type(exc).__name__} {exc}".lower()
-    return any(
-        token in text
-        for token in ("429", "resource_exhausted", "quota", "rate limit", "rate_limit")
-    )
+    text = f"{type(exc).__name__} {exc}".lower().replace("-", "_")
+    return "429" in text or "resource_exhausted" in text
 
 
 def free_model_ids(raw: str) -> list[str]:
@@ -221,6 +218,7 @@ def complete(
     sleep: Callable[[float], None] | None = None,
     post: Callable[[str, dict[str, str], dict], Any] | None = None,
     log_path: Path | None = None,
+    primary_model: str | None = None,
 ) -> Completion:
     """Call Gemini first. Fall back only on a rate limit, and only to ':free' models."""
     assert_synthetic(prompt)
@@ -269,7 +267,7 @@ def complete(
             sleep=pause,
             finish=finish,
         )
-    return finish(text, "gemini", None, "ok")
+    return finish(text, "gemini", primary_model, "ok")
 
 
 def _fallback_completion(
@@ -306,8 +304,14 @@ def complete_or_degrade(
     try:
         return complete(prompt, primary=primary, cache=cache, **kwargs)
     except RateLimitedNoFallback:
-        return Completion(
-            text="No model is available. The pinned wording stays.",
-            provider="gazetteer",
-            model=None,
-        )
+        return gazetteer("no_fallback", log_path=kwargs.get("log_path"))
+
+
+def gazetteer(reason: str, *, log_path: Path | None = None) -> Completion:
+    """Pinned wording. Logged, and not written into the replay cache."""
+    _log(log_path, "gazetteer", None, reason)
+    return Completion(
+        text="No model is available. The pinned wording stays.",
+        provider="gazetteer",
+        model=None,
+    )

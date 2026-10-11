@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { expect, test, vi } from "vitest";
 import type { ApprovalRequest } from "../../apps/web/src/index.ts";
 import { CaseList } from "../../apps/web/components/case-list.tsx";
+import { ComparisonPanel } from "../../apps/web/components/comparison-panel.tsx";
 import { SessionForm } from "../../apps/web/components/session-form.tsx";
 import { SummaryPreview } from "../../apps/web/components/summary-preview.tsx";
 import { SymptomReview } from "../../apps/web/components/term-accept.tsx";
@@ -183,6 +184,45 @@ test("a warning-sign phrase shows the stop screen", async () => {
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+const EVIDENCE = [
+  {
+    hpo_id: "HP:0001250",
+    source: "orphanet",
+    version: "2026-10-11",
+    orphanet_id: "ORPHA:1",
+    relation: "annotated",
+  },
+];
+
+test("an abstained comparison hides the numeric margin", () => {
+  render(
+    <ComparisonPanel
+      report={{
+        evidence: EVIDENCE,
+        margin: 1,
+        abstained: true,
+        abstain_reason: "many_within_factor",
+      }}
+    />,
+  );
+  expect(screen.queryByText(/Margin /)).not.toBeInTheDocument();
+  expect(screen.getByText(/No row is separated/)).toBeInTheDocument();
+});
+
+test("a separated comparison shows the numeric margin", () => {
+  render(
+    <ComparisonPanel
+      report={{
+        evidence: EVIDENCE,
+        margin: 2.5,
+        abstained: false,
+        leading_orphanet_id: "ORPHA:1",
+      }}
+    />,
+  );
+  expect(screen.getByText("Margin 2.500.")).toBeInTheDocument();
 });
 
 test("a warning-sign request that never reaches the API says so", async () => {

@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
+import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
 
-from d4_llm.fallback import assert_synthetic
+from d4_llm.fallback import (
+    Completion,
+    FallbackState,
+    ReplayCache,
+    assert_synthetic,
+    cache_key,
+    complete,
+    gazetteer,
+)
 
 MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _SKIP = (
@@ -69,17 +80,30 @@ def load_models(
     get: Callable[..., Any] | None = None,
 ) -> list[dict]:
     sender = get if get is not None else _http_get
-    response = sender(MODELS_URL, {"x-goog-api-key": key})
-    status = int(getattr(response, "status_code", 0))
-    if status == 429:
-        raise RuntimeError("429 RESOURCE_EXHAUSTED")
-    if status >= 400:
-        raise RuntimeError(f"Gemini models list returned {status}")
-    payload = response.json()
-    rows = payload.get("models") or []
-    if not isinstance(rows, list):
-        raise RuntimeError("Gemini models list has no models")
-    return [row for row in rows if isinstance(row, dict)]
+    rows: list[dict] = []
+    page_token = ""
+    seen: set[str] = set()
+    while True:
+        url = MODELS_URL
+        if page_token:
+            url = f"{MODELS_URL}?{urlencode({'pageToken': page_token})}"
+        response = sender(url, {"x-goog-api-key": key})
+        status = int(getattr(response, "status_code", 0))
+        if status == 429:
+            raise RuntimeError("429 RESOURCE_EXHAUSTED")
+        if status >= 400:
+            raise RuntimeError(f"Gemini models list returned {status}")
+        payload = response.json()
+        page = payload.get("models") or []
+        if not isinstance(page, list):
+            raise RuntimeError("Gemini models list has no models")
+        rows.extend(row for row in page if isinstance(row, dict))
+        next_token = payload.get("nextPageToken")
+        if not isinstance(next_token, str) or not next_token or next_token in seen:
+            break
+        seen.add(next_token)
+        page_token = next_token
+    return rows
 
 
 def gemini_text(
@@ -126,6 +150,49 @@ def make_gemini_primary(
         return gemini_text(prompt, key=key, model=model, post=sender)
 
     return primary
+
+
+def complete_with_gemini(
+    prompt: str,
+    *,
+    cache: ReplayCache,
+    models: list[str] | None = None,
+    environ: Mapping[str, str] | None = None,
+    root: Path | None = None,
+    get: Callable[..., Any] | None = None,
+    post: Callable[[str, dict[str, str], dict], Any] | None = None,
+    sleep: Callable[[float], None] | None = None,
+    log_path: Path | None = None,
+    schema: str = "text",
+    state: FallbackState | None = None,
+    now: Callable[[], float] | None = None,
+) -> Completion:
+    """List every models page, call Gemini first, and record the chosen id."""
+    assert_synthetic(prompt)
+    cached = cache.get(cache_key(prompt, schema))
+    if cached is not None:
+        return cached
+    env = os.environ if environ is None else environ
+    key = str(env.get("GEMINI_API_KEY") or env.get("GOOGLE_API_KEY") or "").strip()
+    if not key:
+        return gazetteer("no_key", log_path=log_path)
+    chosen = choose_model(load_models(key, get=get))
+    sender = post if post is not None else _http_post
+    return complete(
+        prompt,
+        primary=make_gemini_primary(key=key, model=chosen, post=sender),
+        cache=cache,
+        schema=schema,
+        state=state,
+        models=models,
+        environ=env,
+        root=root,
+        now=now,
+        sleep=sleep,
+        post=post,
+        log_path=log_path,
+        primary_model=chosen,
+    )
 
 
 def _http_get(url: str, headers: dict[str, str]) -> httpx.Response:

@@ -17,12 +17,19 @@ This review reads the branch `cursor/finish-odyssey-demo-79af` against `cursor/i
 
 - The warning-sign button left the page blank when `fetch` threw. The click is `void save(...)`, so the rejection was unhandled. The page now says the notebook cannot reach the API. A 409 body that is not JSON still shows "Stop. The words were not saved."
 - A set `OPENROUTER_API_KEY` with no `:free` id list did not call OpenRouter, and the README read as if the key alone were enough. The client still refuses to invent a model id. The README and finish report say to set `OPENROUTER_FREE_MODELS`. A test locks that an unset list does not call OpenRouter and that the provider recorded is `gazetteer`.
+- Playwright resolved `cd ../..` from `apps/web`, which leaves the repo. The web server command is `.venv/bin/python scripts/demo.py` with `cwd: ".."`, so a cold start runs from the repo root.
+- `d1_eval store` printed the term-overlap-loo top-1 as an unlabeled `top1=`. The command summary now leads with `frequency-bin` totals and labels the stand-in line `term-overlap-loo`. `eval/RESULTS.md` was not rewritten.
+- An abstained comparison still showed `Margin 1.000` when ten diseases tied. The panel hides that number when `abstained` is true. The API still returns margin 1 for the tie.
+- `complete_with_gemini` reads `GEMINI_API_KEY` or `GOOGLE_API_KEY`, follows `nextPageToken`, chooses the id, calls Gemini first, and stores that id on `Completion`. OpenRouter stays behind a 429 or `RESOURCE_EXHAUSTED`, and only for an id ending in `:free`. No key returns the pinned gazetteer sentence, does not call HTTP, and does not write the replay cache.
+- `is_rate_limited` matches `429` and `RESOURCE_EXHAUSTED` only. The word "quota" on its own does not fall back.
+- A lone OpenAPI `const` was rendered as `string`. `margin_reason` in `contracts/ts/src/api.ts` is now `"runner_up_ratio_is_zero" | null`.
+- A gazetteer degrade is appended to the jsonl log and is not stored in the replay cache. A pinned sentence must not hide a key that appears later.
+- `create_app` is imported at the top of `export_openapi.py`. The API package does not import that module.
 
 ## Left as they are
 
 - The stop paragraph repeats the 112 sentence already in the page footer. The stop template and the footer both carry that sentence. The screen still names the matched phrase and does not save the draft.
-- A successful Gemini answer records `provider` `gemini` and `model` `None`. The primary callable returns text only. OpenRouter answers record the `:free` id. The provider is what the fallback tests assert.
-- `is_rate_limited` treats `429`, `resource_exhausted`, `quota`, and `rate limit` as the same family. A non-429 error whose text contains "quota" will fall back. That matches the rate-limit rule and will not send a non-synthetic prompt.
 - The package is still named `d4_llm`. Renaming it does not change Gemini-then-OpenRouter.
 - `eval/RESULTS.md` has one calibration row per distinct score. That is the existing harness format.
-- Term-overlap's held-out row is printed so the leakage is visible. It is not an independent catalogue.
+- Term-overlap's held-out row stays in `eval/RESULTS.md` so the leakage is visible. It is not an independent catalogue, and it is not the shipped scorer.
+- `FrequencyBinScorer` still accepts an optional parent map. The notebook and `d1_eval store` do not pass one. An empty map does not climb. The measured climb stays rejected.

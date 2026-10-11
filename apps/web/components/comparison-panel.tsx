@@ -29,7 +29,9 @@ export function ComparisonPanel({ report }: { report: ComparisonReport }) {
       {report.margin_reason === "runner_up_ratio_is_zero" ? (
         <p>The next row has a ratio of zero. The margin is not a finite number.</p>
       ) : null}
-      {report.margin != null ? <p>Margin {report.margin.toFixed(3)}.</p> : null}
+      {report.margin != null && !report.abstained ? (
+        <p>Margin {report.margin.toFixed(3)}.</p>
+      ) : null}
       <ul className="space-y-1 text-sm">
         {report.evidence.map((term) => (
           <li key={`${term.orphanet_id}-${term.hpo_id}-${term.relation}`}>

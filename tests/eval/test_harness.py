@@ -8,9 +8,10 @@ from pathlib import Path
 
 import pytest
 
-from d1_eval.__main__ import main
+from d1_eval.__main__ import command_summary, main
 from d1_eval.harness import (
     DiseaseScore,
+    RunResult,
     TermOverlapScorer,
     calibration_curve,
     check_store_file,
@@ -38,6 +39,33 @@ from d1_eval.harness import (
     time_split_note,
     unique_orphanet,
 )
+
+
+def _result(top1: int) -> RunResult:
+    return RunResult(
+        cases=(),
+        hits={1: top1, 3: top1, 10: top1},
+        packets_scored=10,
+        packets_not_unique=0,
+        excluded_diseases=1,
+        no_confident=2,
+        confident=(),
+    )
+
+
+def test_store_stdout_names_frequency_bin_and_labels_the_stand_in() -> None:
+    text = command_summary(_result(3), _result(9), skipped=0, orphanet="pin")
+    assert "frequency-bin top1=3/10" in text
+    assert "term-overlap-loo top1=9/10" in text
+    assert "\ntop1=" not in f"\n{text}"
+
+
+def test_store_stdout_says_when_frequency_bin_did_not_run() -> None:
+    text = command_summary(None, _result(9), skipped=1, orphanet="missing xml")
+    assert "frequency-bin did not run" in text
+    assert "term-overlap-loo top1=9/10" in text
+    assert "\ntop1=" not in f"\n{text}"
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "eval" / "fixtures"

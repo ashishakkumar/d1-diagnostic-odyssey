@@ -1,5 +1,6 @@
 """Gemini first. OpenRouter free models only after a 429. No live network."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from d4_llm import (
     SyntheticRejected,
     complete,
     complete_or_degrade,
+    is_rate_limited,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -230,6 +232,69 @@ def test_a_cached_answer_is_not_requested_again(tmp_path: Path) -> None:
     assert first.text == second.text == "pong"
     assert second.cached is True
     assert calls["primary"] == 1
+
+
+def test_quota_without_a_429_is_not_a_rate_limit() -> None:
+    assert is_rate_limited(RuntimeError("quota")) is False
+    assert is_rate_limited(RuntimeError("rate limit")) is False
+    assert is_rate_limited(RuntimeError("429 RESOURCE_EXHAUSTED")) is True
+    assert is_rate_limited(RuntimeError("RESOURCE_EXHAUSTED")) is True
+
+
+def test_a_missing_fallback_logs_the_gazetteer_and_does_not_cache_it(tmp_path: Path) -> None:
+    log_path = tmp_path / "logs" / "llm.jsonl"
+
+    def primary(_prompt: str) -> str:
+        raise Quota()
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("openrouter")
+
+    cache = _cache(tmp_path)
+    degraded = complete_or_degrade(
+        PROMPT,
+        primary=primary,
+        cache=cache,
+        models=["example/test:free"],
+        environ={},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        post=post,
+        log_path=log_path,
+    )
+    assert degraded.provider == "gazetteer"
+    row = json.loads(log_path.read_text().splitlines()[-1])
+    assert row["provider"] == "gazetteer"
+    assert row["model"] is None
+    with pytest.raises(RateLimitedNoFallback):
+        complete(
+            PROMPT,
+            primary=primary,
+            cache=cache,
+            models=["example/test:free"],
+            environ={},
+            root=tmp_path,
+            sleep=lambda _seconds: None,
+            post=post,
+        )
+
+
+def test_a_gemini_success_records_the_primary_model_id(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        return "pong"
+
+    result = complete(
+        PROMPT,
+        primary=primary,
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        primary_model="gemini-3.5-flash-lite",
+    )
+    assert result.provider == "gemini"
+    assert result.model == "gemini-3.5-flash-lite"
 
 
 def test_the_notebook_routes_do_not_call_a_model() -> None:

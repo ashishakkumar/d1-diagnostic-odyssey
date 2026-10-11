@@ -10,6 +10,7 @@ from pathlib import Path
 from d1_eval.frequency import FrequencyBinScorer, frequency_table
 from d1_eval.harness import (
     Pins,
+    RunResult,
     StoreLoad,
     TermOverlapScorer,
     check_store_file,
@@ -148,7 +149,7 @@ def _store(data: Path, out: Path) -> int:
             )
         rows.append((level, summarize(ranked, excluded, pins.ks)))
     standin = results_document(rows, pins, note, tool="term-overlap-loo")
-    frequency_text, frequency_status = _frequency_rows(
+    frequency_text, frequency_status, frequency_full = _frequency_rows(
         loaded,
         mapping,
         unique,
@@ -168,17 +169,45 @@ def _store(data: Path, out: Path) -> int:
     text += f"packets_skipped: {loaded.skipped}\n"
     text += f"orphanet: {frequency_status}\n"
     out.write_text(text)
-    full = rows[0][1]
-    print(f"excluded_diseases={excluded}")
-    print(f"packets_scored={full.packets_scored}")
-    print(f"packets_not_unique={full.packets_not_unique}")
-    print(f"packets_skipped={loaded.skipped}")
-    print(f"top1={full.hits[1]}/{full.packets_scored}")
-    print(f"top3={full.hits[3]}/{full.packets_scored}")
-    print(f"top10={full.hits[10]}/{full.packets_scored}")
-    print(f"no_confident={full.no_confident}/{full.packets_scored}")
-    print(f"orphanet={frequency_status}")
+    print(
+        command_summary(
+            frequency_full,
+            rows[0][1],
+            skipped=loaded.skipped,
+            orphanet=frequency_status,
+        ),
+        end="",
+    )
     return 0
+
+
+def command_summary(
+    frequency: RunResult | None,
+    standin: RunResult,
+    *,
+    skipped: int,
+    orphanet: str,
+) -> str:
+    """Print the shipped frequency-bin totals. Label the term-overlap stand-in."""
+    headline = frequency if frequency is not None else standin
+    lines = [
+        f"excluded_diseases={headline.excluded_diseases}",
+        f"packets_scored={headline.packets_scored}",
+        f"packets_not_unique={headline.packets_not_unique}",
+        f"packets_skipped={skipped}",
+    ]
+    if frequency is None:
+        lines.append("frequency-bin did not run")
+    else:
+        scored = frequency.packets_scored
+        lines.append(f"frequency-bin top1={frequency.hits[1]}/{scored}")
+        lines.append(f"frequency-bin top3={frequency.hits[3]}/{scored}")
+        lines.append(f"frequency-bin top10={frequency.hits[10]}/{scored}")
+        lines.append(f"frequency-bin no_confident={frequency.no_confident}/{scored}")
+    standin_scored = standin.packets_scored
+    lines.append(f"term-overlap-loo top1={standin.hits[1]}/{standin_scored}")
+    lines.append(f"orphanet={orphanet}")
+    return "\n".join(lines) + "\n"
 
 
 def _frequency_rows(
@@ -190,7 +219,7 @@ def _frequency_rows(
     pins: Pins,
     xml_path: Path,
     error_path: Path,
-) -> tuple[str, str]:
+) -> tuple[str, str, RunResult | None]:
     note = (
         "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
         "Abstentions are misses. The scorer thresholds were not changed for this run. "
@@ -205,7 +234,7 @@ def _frequency_rows(
         reason = (
             error_path.read_text().strip() if error_path.is_file() else "en_product4.xml is missing"
         )
-        return f"Frequency-bin scorer did not run: {reason}\n", reason
+        return f"Frequency-bin scorer did not run: {reason}\n", reason, None
     try:
         kept = {disease: mapping[disease] for disease in unique}
         freq_rows, orpha_to_disease = frequency_table(xml_path, kept)
@@ -233,10 +262,11 @@ def _frequency_rows(
                 tool_version="0.0.1",
             ),
             status,
+            ranked_rows[0][1],
         )
     except Exception as exc:
         reason = f"{type(exc).__name__}: {exc}"
-        return f"Frequency-bin scorer did not run: {reason}\n", reason
+        return f"Frequency-bin scorer did not run: {reason}\n", reason, None
 
 
 def _fetch_orphanet(dest: Path, url: str, fallback: str) -> None:

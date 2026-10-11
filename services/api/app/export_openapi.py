@@ -6,12 +6,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.routes.notebook import create_app
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
 def openapi_document() -> dict[str, Any]:
-    from app.routes.notebook import create_app
-
     return create_app().openapi()
 
 
@@ -20,6 +20,8 @@ def _type_name(schema: dict, names: dict[str, str]) -> str:
         return schema["$ref"].rsplit("/", 1)[-1]
     if "enum" in schema and schema.get("type") == "string":
         return " | ".join(json.dumps(item) for item in schema["enum"])
+    if "const" in schema and isinstance(schema["const"], str):
+        return json.dumps(schema["const"])
     kind = schema.get("type")
     if "anyOf" in schema:
         return " | ".join(_type_name(item, names) for item in schema["anyOf"])
