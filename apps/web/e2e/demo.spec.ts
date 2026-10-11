@@ -7,11 +7,11 @@ test("one step, then the software reads a synthetic note", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByLabel("Your name for this notebook")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Pick a note. The software does the rest." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Separated rows/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Separated rows/ })).toBeVisible();
   await expect(page.getByRole("contentinfo")).toContainText("112");
   await page.screenshot({ path: path.join(shots, "01-cases.png"), fullPage: true });
 
-  await page.getByRole("link", { name: /Separated rows/ }).click();
+  await page.getByRole("link", { name: /^Separated rows/ }).click();
   await expect(page.getByTestId("method")).toContainText("No language model ran");
   await expect(page.getByTestId("stage-read")).toContainText("Read");
   await expect(page.getByTestId("stage-map")).toContainText("Map");
@@ -55,7 +55,7 @@ test("one step, then the software reads a synthetic note", async ({ page }) => {
   await page.screenshot({ path: path.join(shots, "06-limits.png"), fullPage: true });
 
   await page.goto("/");
-  await page.getByLabel("Synthetic note").fill("Unconsciousness.");
+  await page.getByRole("textbox", { name: "Synthetic note" }).fill("Unconsciousness.");
   await page.getByRole("button", { name: "Read this note" }).click();
   await expect(page.getByTestId("stop")).toContainText("Stop");
   await expect(page.getByTestId("stop")).toContainText("Unconsciousness");

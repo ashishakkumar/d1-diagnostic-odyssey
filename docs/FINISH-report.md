@@ -4,7 +4,7 @@ For research use only. Not for use in diagnostic procedures.
 
 This notebook is a synthetic case file. It does not diagnose. `make demo` resets the local database and opens the one-step notebook at <http://127.0.0.1:3000>.
 
-Pull request #9 is the finish PR for the whole app. Its base is `main`. It is not a draft. The head branch is `cursor/finish-odyssey-demo-79af`.
+Pull request #9 is the finish PR for the whole app. Its base is `main`. It is not a draft. The head branch is `cursor/finish-odyssey-demo-79af`. Pull request #11 is the one-step landing. Its base is the finish branch. Its head is `design/editorial-landing`.
 
 The multi-omics slice is the opt-in allele-frequency prior in `services/api/app/data/allele_frequencies.json` (`NM_000138.5:c.1A>G`, 0.00012, source `fixture-allele-frequency`). It is experimental and non-diagnostic. This build did not call gnomAD or ClinVar. The prior does not change the catalogue comparison. No model is used for it.
 
@@ -68,8 +68,8 @@ The comparison panel states that the rows on the page are the synthetic frequenc
 
 ## Measured on this revision
 
-- `make test`: 239 passed, 1 skipped. The skipped test is the opt-in live model smoke. It was not run. The OpenAPI drift tests passed in this run. Gemini-to-OpenRouter `:free` coverage is the stubbed 429 tests only.
-- Cold `make e2e`: 1 passed (11.3s). The comparison panel shows the public-case ranker sentence. The abstain page does not show a numeric margin.
+- `make test`: 243 passed, 1 skipped. The skipped test is the opt-in live model smoke. It was not run. The OpenAPI drift tests passed in this run. Gemini-to-OpenRouter `:free` coverage is the stubbed 429 tests only.
+- Cold `make e2e`: 1 passed (23.9s). The landing has no sign-in wall. Separated rows ends on ORPHA:9000001, a confirm click, and reviewer `synthetic-reader`. The seizure-only case and the stable pair say not enough signal. A pasted "Unconsciousness." shows the stop screen.
 - `d1_eval heldout`: exit 0. Resnik best-match average on the 925 test packets beats the degree baseline at k=1 (419/925 vs 327/925) and at k=5 (614/925 vs 533/925). Frequency-bin packet top-1 stays 1395/4815 and does not beat the degree baseline.
 
 ## Contract, prior, and model client
