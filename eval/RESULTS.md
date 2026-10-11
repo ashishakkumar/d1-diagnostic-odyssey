@@ -5335,7 +5335,7 @@ These rows are method results on public cases. They are not a benefit to a real 
 
 ## Time-split leakage note
 
-Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. P(feature | not this disease) is the leave-one-out rate (k + 1) / (n + 2) across disorders in en_product4. A disorder with no row contributes a ratio of 1. Abstentions are misses. The abstention constants were not changed for this run.
+Time-split leakage note. Cutoff 2026-06-23. before=10377 after=0 undated=0. The packet created timestamp is not a publication date. This check is not a pass. A packet dated before the cutoff can still share a paper with the public table. Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. P(feature | not this disease) is the leave-one-out rate (k + 1) / (n + 2) across disorders in en_product4. A disorder with no row contributes a ratio of 1. Abstentions are misses. The abstention constants were not changed for this run.
 
 # Public-case method results
 

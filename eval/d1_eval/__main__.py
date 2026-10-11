@@ -113,6 +113,17 @@ def _check(dest: Path) -> int:
     return 0
 
 
+def _frequency_note(time_note: str) -> str:
+    """Method sentence plus the measured time-split. The split is not a pass."""
+    method = (
+        "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
+        "P(feature | not this disease) is the leave-one-out rate (k + 1) / (n + 2) "
+        "across disorders in en_product4. A disorder with no row contributes a ratio of 1. "
+        "Abstentions are misses. The abstention constants were not changed for this run."
+    )
+    return f"{time_note} {method}"
+
+
 def _archive_previous(previous: str) -> str:
     """Keep the earlier frequency-bin 0.0.1 document when a new run is written."""
     marker = "| full | frequency-bin | 0.0.1 |"
@@ -133,8 +144,8 @@ def _store(data: Path, out: Path) -> int:
     obo = data / "hp.obo"
     parents = parents_from_obo(obo) if obo.exists() else {}
     unique, excluded = unique_orphanet(loaded.disease_ids, mapping)
-    note = time_split_note(time_split(loaded.cases, pins.knowledge_cutoff))
-    note += (
+    split_note = time_split_note(time_split(loaded.cases, pins.knowledge_cutoff))
+    note = split_note + (
         " The term-overlap-loo catalogue is other packets in this same store release, "
         "with the packet being scored left out. It is not an Orphanet frequency table."
     )
@@ -169,6 +180,7 @@ def _store(data: Path, out: Path) -> int:
         pins,
         data / "en_product4.xml",
         data / "orphanet-error.txt",
+        split_note,
     )
     text = frequency_text + "\n" + standin
     text += "\n" + f"mondo_sha256: {_sha256(data / 'mondo_nodes.tsv')}\n"
@@ -207,13 +219,9 @@ def _frequency_rows(
     pins: Pins,
     xml_path: Path,
     error_path: Path,
+    time_note: str,
 ) -> tuple[str, str]:
-    note = (
-        "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
-        "P(feature | not this disease) is the leave-one-out rate (k + 1) / (n + 2) "
-        "across disorders in en_product4. A disorder with no row contributes a ratio of 1. "
-        "Abstentions are misses. The abstention constants were not changed for this run."
-    )
+    note = _frequency_note(time_note)
     if not xml_path.is_file():
         reason = (
             error_path.read_text().strip() if error_path.is_file() else "en_product4.xml is missing"

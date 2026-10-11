@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from d1_eval.__main__ import _archive_previous, main
+from d1_eval.__main__ import _archive_previous, _frequency_note, main
 from d1_eval.harness import (
     DiseaseScore,
     TermOverlapScorer,
@@ -287,6 +287,30 @@ def test_a_later_store_run_keeps_the_frequency_bin_0_0_1_rows() -> None:
     archived = _archive_previous(later)
     assert "0.0.2" not in archived
     assert "| full | frequency-bin | 0.0.1 |" in archived
+
+
+def test_frequency_note_keeps_the_time_split_with_the_corpus_rate() -> None:
+    time_note = time_split_note(time_split([], date(2026, 6, 23)))
+    note = _frequency_note(time_note)
+    assert "(k + 1) / (n + 2)" in note
+    assert "not a publication date" in note
+    assert "not a pass" in note
+    assert "2026-06-23" in note
+
+
+def test_recorded_frequency_bin_0_0_2_section_states_the_time_split() -> None:
+    text = (ROOT / "eval" / "RESULTS.md").read_text()
+    start = text.find("| full | frequency-bin | 0.0.2 |")
+    note_at = text.find("## Time-split leakage note", start)
+    next_doc = text.find("# Public-case method results", note_at)
+    note = text[note_at:next_doc]
+    table = text[start:note_at]
+    assert "1395/4815" in table
+    assert "1645/4815" in table
+    assert "(k + 1) / (n + 2)" in note
+    assert "not a publication date" in note
+    assert "not a pass" in note
+    assert "before=10377" in note
 
 
 def test_results_document_can_name_the_frequency_scorer_version() -> None:
