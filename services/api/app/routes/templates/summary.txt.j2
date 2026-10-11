@@ -1,0 +1,27 @@
+Prepared by the patient or caregiver using a record tool. Not a medical document.
+
+Case {{ case_id }}
+
+What was confirmed
+{% for term in terms -%}
+- {{ term.label }} ({{ term.hpo_id }}), marked {{ term.presence }}.
+{% else -%}
+- No symptom term has been accepted.
+{% endfor %}
+What was typed from a lab report
+{% for variant in variants -%}
+- Report date {{ variant.report_date }}. Gene {{ variant.gene_symbol }}. Variant typed: {{ variant.variant }}. The lab's words: {{ variant.lab_words }}.
+{% else -%}
+- No lab-reported variant has been typed.
+{% endfor %}
+Questions to take to a doctor
+{% for term in terms -%}
+- I confirmed {{ term.label }} ({{ term.hpo_id }}). What should we discuss about that term?
+{% endfor -%}
+{% for variant in variants -%}
+- The report dated {{ variant.report_date }} named {{ variant.gene_symbol }} and used these words: {{ variant.lab_words }}. What do those words mean?
+{% endfor -%}
+{% if not terms and not variants -%}
+- No confirmed item is in this notebook yet, so there is no question from a saved row.
+{% endif %}
+For research use only. Not for use in diagnostic procedures. Not a diagnosis and not for emergencies.
