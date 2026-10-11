@@ -54,7 +54,7 @@ Fixed while finishing:
 - An inline import in the held-out test was moved to the top of the file.
 - A warning-sign click whose request never reached the API left the page blank. The page now says the notebook cannot reach the API.
 - An abstained catalogue comparison showed `Margin 1.000` while the summary already omitted it. The panel now hides the number when the report abstains. The API still returns margin 1 for that tie.
-- Playwright's web server command changed directory from `apps/web` with `cd ../..`, which is outside the repo. It now runs `.venv/bin/python scripts/demo.py` with the repo root as the working directory.
+- Playwright starts `.venv/bin/python scripts/demo.py` with working directory `../..` from `apps/web`, which is the repo root. `cwd: ".."` is only the `apps` directory. A cold `make e2e` with nothing listening on ports 3000 and 8000 started the API and passed.
 - `d1_eval store` printed the term-overlap-loo top-1 without a label. The summary now names frequency-bin first and labels the stand-in.
 - The generated TypeScript client treated OpenAPI `const` as `string`. `margin_reason` is the literal `runner_up_ratio_is_zero` or null.
 - A Gemini success did not record the model id, and nothing read `GEMINI_API_KEY`. `complete_with_gemini` lists the models pages, calls the chosen id, and stores it. A missing key degrades without HTTP.

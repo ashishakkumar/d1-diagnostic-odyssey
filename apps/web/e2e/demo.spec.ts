@@ -22,6 +22,7 @@ test("five synthetic cases, the comparison, and the stop screen", async ({ page 
   await page.getByRole("button", { name: "Load No separated row" }).click();
   await expect(page.getByText("did not separate a first row").first()).toBeVisible();
   await expect(page.getByText("does not mean you are well").first()).toBeVisible();
+  await expect(page.getByTestId("comparison")).not.toContainText("Margin");
   await page.screenshot({ path: path.join(shots, "03-abstain.png"), fullPage: true });
 
   await page.goto("/");
