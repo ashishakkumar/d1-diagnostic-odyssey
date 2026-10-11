@@ -1,5 +1,6 @@
 import { WorkPipeline } from "../../apps/web/components/work-pipeline.tsx";
-import { assemblyDuration, assemblyFrames, notePieces } from "../../apps/web/lib/assemble.ts";
+import { PAGE_IMPACT, assemblyDuration, assemblyFrames, notePieces, stageKind } from "../../apps/web/lib/assemble.ts";
+import { TOUR_STEPS } from "../../apps/web/lib/tour.ts";
 import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
@@ -35,6 +36,21 @@ test("a case file stays under ten seconds and still moves", () => {
     ranks: Array.from({ length: 10 }, () => ({ bar: 1 })),
   });
   expect(assemblyDuration(crowded)).toBeLessThan(10_000);
+});
+
+test("the tour separates rules from the scoring model", () => {
+  expect(TOUR_STEPS.length).toBeGreaterThanOrEqual(3);
+  expect(TOUR_STEPS.length).toBeLessThanOrEqual(5);
+  expect(TOUR_STEPS.filter((step) => step.kicker === "Rule").map((step) => step.id)).toEqual([
+    "note",
+    "chips",
+    "map",
+  ]);
+  expect(TOUR_STEPS.find((step) => step.id === "rank")?.kicker).toBe("Scoring model");
+  expect(TOUR_STEPS.some((step) => step.handsOn)).toBe(true);
+  expect(PAGE_IMPACT.includes("1 click")).toBe(false);
+  expect(stageKind("read")).toBe("Rule");
+  expect(stageKind("rank")).toBe("Scoring model");
 });
 
 test("the scan marks a phrase only after the window has passed it", () => {
@@ -95,5 +111,6 @@ test("reduced motion opens the decision without playing the scan", async () => {
   render(<WorkPipeline slug="separated" note={null} />);
   expect(await screen.findByRole("button", { name: "Confirm these terms" })).toBeInTheDocument();
   expect(screen.getByTestId("impact")).toHaveTextContent("1 click");
-  expect(screen.getByTestId("stage-read")).toHaveTextContent("Deterministic");
+  expect(screen.getByTestId("stage-read")).toHaveTextContent("Rule");
+  expect(screen.getByTestId("stage-rank")).toHaveTextContent("Scoring model");
 });

@@ -1,12 +1,16 @@
 "use client";
 
+import { TourMark } from "@/components/tour-mark";
 import {
   type AssemblyFrame,
   type AssemblyStage,
+  type OpenedWith,
   assemblyFrames,
   impactLine,
   notePieces,
+  stageKind,
 } from "@/lib/assemble";
+import { TOUR_STEPS } from "@/lib/tour";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type Term = {
@@ -86,9 +90,15 @@ function reducedMotion(): boolean {
 export function WorkPipeline({
   slug,
   note,
+  openedWith,
+  showTour = false,
+  startTour = false,
 }: {
   slug: string | null;
   note: string | null;
+  openedWith?: OpenedWith;
+  showTour?: boolean;
+  startTour?: boolean;
 }) {
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [stop, setStop] = useState<StopScreen | null>(null);
@@ -96,6 +106,10 @@ export function WorkPipeline({
   const [frameIndex, setFrameIndex] = useState(0);
   const [dropped, setDropped] = useState<string[]>([]);
   const [recorded, setRecorded] = useState<string | null>(null);
+  const [tourIndex, setTourIndex] = useState<number | null>(null);
+  const [tourArmed, setTourArmed] = useState(false);
+  const [handsOnDone, setHandsOnDone] = useState(false);
+  const how: OpenedWith = openedWith ?? (slug ? "click" : "note");
   const markRefs = useRef<Record<string, HTMLElement | null>>({});
   const chipRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -143,6 +157,45 @@ export function WorkPipeline({
     }, frames[0]?.ms ?? 0);
     return () => window.clearTimeout(timer);
   }, [frames]);
+
+  useEffect(() => {
+    if (!showTour || !frame?.decide) {
+      return;
+    }
+    if (startTour || tourArmed) {
+      setTourIndex(0);
+      setTourArmed(false);
+      return;
+    }
+    try {
+      if (window.localStorage.getItem("d1-tour-seen") === "1") {
+        return;
+      }
+    } catch {
+      return;
+    }
+    setTourIndex(0);
+  }, [showTour, frame?.decide, startTour, tourArmed]);
+
+  function closeTour() {
+    try {
+      window.localStorage.setItem("d1-tour-seen", "1");
+    } catch {
+      // The tour still closes when storage is blocked.
+    }
+    setTourIndex(null);
+  }
+
+  function nextTour() {
+    if (tourIndex === null) {
+      return;
+    }
+    if (tourIndex + 1 >= TOUR_STEPS.length) {
+      closeTour();
+      return;
+    }
+    setTourIndex(tourIndex + 1);
+  }
 
   useLayoutEffect(() => {
     if (!result || !frame || frame.stage !== "map" || frame.chips === 0 || reducedMotion()) {
@@ -207,6 +260,25 @@ export function WorkPipeline({
         <p className="text-sm" data-testid="method">
           {result.method}
         </p>
+        <button
+          type="button"
+          data-testid="take-tour"
+          className="font-ui text-sm underline"
+          onClick={() => {
+            if (!showTour) {
+              window.location.assign("/?tour=1");
+              return;
+            }
+            setHandsOnDone(false);
+            if (frame.decide) {
+              setTourIndex(0);
+            } else {
+              setTourArmed(true);
+            }
+          }}
+        >
+          Take the tour
+        </button>
       </header>
       <ol className="grid gap-2 sm:grid-cols-4">
         {result.stages.map((stage, index) => (
@@ -218,7 +290,7 @@ export function WorkPipeline({
             }`}
           >
             <p className="font-ui text-xs uppercase tracking-widest">{stage.label}</p>
-            <p className="text-xs">Deterministic</p>
+            <p className="text-xs">{stageKind(stage.id)}</p>
             <p className="text-xs" data-testid="actor-software">
               Software, not a person.
             </p>
@@ -227,7 +299,7 @@ export function WorkPipeline({
       </ol>
       <section className="space-y-2" data-testid="stage-caption" aria-live="polite">
         <p className="font-ui text-xs uppercase tracking-widest text-terracotta">
-          {stageCopy?.label} · Deterministic
+          {stageCopy?.label} · {stageKind(frame.stage)}
         </p>
         <h2 className="font-display text-2xl">What the software did</h2>
         <p data-testid="stage-detail">{stageCopy?.did}</p>
@@ -285,13 +357,14 @@ export function WorkPipeline({
                     <button
                       type="button"
                       className="font-ui text-xs text-terracotta"
-                      onClick={() =>
-                        setDropped((current) =>
-                          current.includes(term.hpo_id)
-                            ? current.filter((item) => item !== term.hpo_id)
-                            : [...current, term.hpo_id],
-                        )
-                      }
+                    onClick={() => {
+                      setHandsOnDone(true);
+                      setDropped((current) =>
+                        current.includes(term.hpo_id)
+                          ? current.filter((item) => item !== term.hpo_id)
+                          : [...current, term.hpo_id],
+                      );
+                    }}
                     >
                       {gone ? "Restore" : "Correct"}
                     </button>
@@ -367,7 +440,7 @@ export function WorkPipeline({
       {frame.decide && result.gene_line ? <p>{result.gene_line}</p> : null}
       {frame.decide && result.limit_line ? <p>{result.limit_line}</p> : null}
       {frame.decide ? (
-        <p data-testid="impact">{impactLine(slug !== null)}</p>
+        <p data-testid="impact">{impactLine(how)}</p>
       ) : null}
       {frame.decide ? (
         <section className="space-y-3 border-t border-border pt-4" data-testid="decision">
@@ -415,6 +488,14 @@ export function WorkPipeline({
             </button>
           )}
         </section>
+      ) : null}
+      {tourIndex !== null ? (
+        <TourMark
+          index={tourIndex}
+          handsOnDone={handsOnDone}
+          onNext={nextTour}
+          onSkip={closeTour}
+        />
       ) : null}
     </article>
   );

@@ -22,5 +22,12 @@ export function WorkClient() {
   if (!slug && !note) {
     return <p>Paste a synthetic note on the first page.</p>;
   }
-  return <WorkPipeline slug={slug} note={slug ? null : note} />;
+  return (
+    <WorkPipeline
+      slug={slug}
+      note={slug ? null : note}
+      openedWith={slug ? "click" : "note"}
+      showTour={slug === "separated"}
+    />
+  );
 }

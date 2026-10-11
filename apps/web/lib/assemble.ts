@@ -21,11 +21,31 @@ const SCAN_BUDGET = 24;
 const SCAN_MS = 55;
 const SCAN_WINDOW = 14;
 
+export const PAGE_IMPACT =
+  "This file opened with the page. The previous notebook asked for a name, Continue, and Load. Confirm is the decision that is still yours.";
+
 export const CASE_IMPACT =
   "Name, Continue, and Load were 3 actions. This file opened on 1 click. Confirm is the decision that is still yours.";
 
 export const NOTE_IMPACT =
-  "You supplied the note. Four deterministic stages ran after that. Confirm is the decision that is still yours.";
+  "You supplied the note. Read, Map, and Match are rules. Rank is a scoring model on this table. Confirm is the decision that is still yours.";
+
+export type OpenedWith = "page" | "click" | "note";
+
+export function stageKind(stage: AssemblyStage): "Rule" | "Scoring model" {
+  switch (stage) {
+    case "read":
+    case "map":
+    case "match":
+      return "Rule";
+    case "rank":
+      return "Scoring model";
+    default: {
+      const leftover: never = stage;
+      return leftover;
+    }
+  }
+}
 
 export function paceMs(units: number): number {
   if (units <= 3) {
@@ -167,6 +187,17 @@ export function notePieces(
   return pieces;
 }
 
-export function impactLine(startedByCase: boolean): string {
-  return startedByCase ? CASE_IMPACT : NOTE_IMPACT;
+export function impactLine(openedWith: OpenedWith): string {
+  switch (openedWith) {
+    case "page":
+      return PAGE_IMPACT;
+    case "click":
+      return CASE_IMPACT;
+    case "note":
+      return NOTE_IMPACT;
+    default: {
+      const leftover: never = openedWith;
+      return leftover;
+    }
+  }
 }
