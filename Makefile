@@ -3,7 +3,7 @@ export DATABASE_URL
 
 VENV := .venv/bin
 
-.PHONY: setup lint test db-up db-reset generate safety-scan
+.PHONY: setup lint test db-up db-reset generate safety-scan eval-download eval-store ingest-replay
 
 setup:
 	python3 -m venv .venv
@@ -45,8 +45,8 @@ db-reset: db-up
 	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f db/002_gate.sql
 
 lint:
-	$(VENV)/ruff check contracts services tests
-	$(VENV)/ruff format --check contracts services tests
+	$(VENV)/ruff check contracts services tests eval
+	$(VENV)/ruff format --check contracts services tests eval
 	npm --prefix contracts/ts run lint
 	npm --prefix apps/web run lint
 
@@ -57,13 +57,18 @@ test: db-reset
 safety-scan:
 	PYTHONPATH=services/safety $(VENV)/python -m d1_safety
 
+eval-download:
+	mkdir -p data/eval
+	PYTHONPATH=eval $(VENV)/python -m d1_eval download --dest data/eval
+
+eval-store: eval-download
+	PYTHONPATH=eval $(VENV)/python -m d1_eval store --data data/eval --out data/eval/results.md
+
 # --- services/ingest ----------------------------------------------------------
 # Reference loaders and the on-device monthly change list. Archives are local
 # files. Nothing in this target sends a variant anywhere.
 #   make ingest-replay INGEST_ARCHIVES="a.txt.gz b.txt.gz"
 INGEST_OUT ?= services/ingest/change-list-size.tsv
-
-.PHONY: ingest-replay
 
 ingest-replay:
 	PYTHONPATH="services/ingest/src:contracts/src" $(VENV)/python -m d1_ingest.replay \
