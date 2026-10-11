@@ -34,9 +34,11 @@ Term-overlap-loo on the same pin, for comparison only: full-set top-1 3806/4815,
 
 `contracts/openapi.json` is generated from the FastAPI app. `contracts/ts/src/api.ts` is generated from that document. `tests/test_openapi.py` fails if either file drifts. The report response leaves unset fields out, so a catalogue comparison does not carry a `probability` without a reliability curve. `margin` is still present when it is null, and `margin_reason` says `runner_up_ratio_is_zero` when the runner-up lower ratio is 0.
 
-`services/llm` calls Gemini first. The model id is the newest flash-lite id returned by `GET https://generativelanguage.googleapis.com/v1beta/models`, not a constant in the client. OpenRouter is used only after a Gemini rate limit, and only for model ids that end in `:free`, with backoff and a SHA-256 replay cache. Text must contain `SYNTHETIC-ONLY` or the client refuses it before any HTTP call. With no fallback key, a rate limit degrades to pinned wording. Keys stay in gitignored `uploads/` and `.env` files. One opt-in smoke (`D4_LLM_LIVE=1`) completed a single `:free` fallback call. The other LLM tests use stubs.
+`services/llm` calls Gemini first. The model id is the newest flash-lite id returned by `GET https://generativelanguage.googleapis.com/v1beta/models`, not a constant in the client. OpenRouter is used only after a Gemini rate limit, and only for model ids that end in `:free`, with backoff and a SHA-256 replay cache. Text must contain `SYNTHETIC-ONLY` or the client refuses it before any HTTP call. With no fallback key, or no `OPENROUTER_FREE_MODELS` list of `:free` ids, a rate limit degrades to pinned wording and does not call OpenRouter. Keys stay in gitignored `uploads/` and `.env` files. One opt-in smoke (`D4_LLM_LIVE=1`) completed a single `:free` fallback call. The other LLM tests use stubs.
 
 Synthetic open-band note segmentation, and the replay fixtures for those nine notes, were removed. They came from a paperwork task sent to this repo by mistake. They do not ground catalogue terms.
+
+The implementation review is [code-review.md](code-review.md). `docs/review.md` stays the plan critique.
 
 ## Self-review
 
@@ -50,6 +52,7 @@ Fixed while finishing:
 - FastAPI was adding `"probability": null` from the report model default. The report route uses `response_model_exclude_unset`, so an unset probability is absent and a null margin stays.
 - The store command was scoring the ancestor climb while the notebook scored exact rows. The command now scores the shipped exact-match scorer. The climb result is recorded above and in the results note.
 - An inline import in the held-out test was moved to the top of the file.
+- A warning-sign click whose request never reached the API left the page blank. The page now says the notebook cannot reach the API.
 
 Left as they are:
 

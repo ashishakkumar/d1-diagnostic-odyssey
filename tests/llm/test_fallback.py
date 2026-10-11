@@ -141,6 +141,26 @@ def test_a_429_without_a_key_degrades_to_the_gazetteer(tmp_path: Path) -> None:
     assert "pinned wording" in degraded.text
 
 
+def test_a_key_without_a_free_model_list_does_not_call_openrouter(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        raise Quota()
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("openrouter")
+
+    degraded = complete_or_degrade(
+        PROMPT,
+        primary=primary,
+        cache=_cache(tmp_path),
+        environ={"OPENROUTER_API_KEY": "test-key"},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        post=post,
+    )
+    assert degraded.provider == "gazetteer"
+    assert "pinned wording" in degraded.text
+
+
 def test_a_model_id_without_the_free_suffix_is_rejected(tmp_path: Path) -> None:
     def primary(_prompt: str) -> str:
         raise AssertionError("primary")

@@ -30,13 +30,23 @@ export default function VariantPage() {
   }, []);
 
   async function save(fields: VariantFields) {
-    const response = await fetch(`/api/cases/${params.id}/variants`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(fields),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`/api/cases/${params.id}/variants`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(fields),
+      });
+    } catch {
+      setMessage("The notebook cannot reach the API.");
+      return;
+    }
     if (response.status === 409) {
-      setMessage(await stopText(response));
+      try {
+        setMessage(await stopText(response));
+      } catch {
+        setMessage("Stop. The words were not saved.");
+      }
       return;
     }
     if (!response.ok) {

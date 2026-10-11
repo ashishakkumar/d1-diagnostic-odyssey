@@ -184,3 +184,20 @@ test("a warning-sign phrase shows the stop screen", async () => {
     vi.unstubAllGlobals();
   }
 });
+
+test("a warning-sign request that never reaches the API says so", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      throw new Error("down");
+    }),
+  );
+  try {
+    render(<VariantPage />);
+    await user.click(screen.getByRole("button", { name: "Try a warning-sign phrase" }));
+    expect(await screen.findByText(/cannot reach the API/)).toBeInTheDocument();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
