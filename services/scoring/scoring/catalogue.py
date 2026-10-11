@@ -1,4 +1,19 @@
-"""Orphanet frequency-bin likelihood ratios. Phenotype frequencies only."""
+"""Orphanet frequency-bin likelihood ratios. Phenotype frequencies only.
+
+P(feature | not this disease) is the leave-one-out rate on the rows passed in.
+Those rows are Orphadata Science en_product4 (CC BY 4.0). phenotype.hpoa is not
+used: its inferred rows are parsed from OMIM, and OMIM has to be contacted
+before another product reuses them. k is the number of other disorders that
+list the term in a bin other than excluded. n is the number of other disorders.
+The rate is (k + 1) / (n + 2). The added counts are a uniform prior, frozen
+before any store run, so a term listed nowhere else is not treated as
+impossible and a term listed on every other disorder does not make the
+absent-feature denominator zero. A disorder with no row uses that same rate,
+so the ratio is 1. A missing row is not evidence.
+
+A runner-up lower ratio of 0 is not a blank margin. The report names the term
+that made the bound zero.
+"""
 
 import math
 from collections import defaultdict
@@ -12,13 +27,18 @@ from pydantic import BaseModel, ConfigDict
 
 from d1_contracts import EvidenceRow
 
-# ponytail: one background for every term, and 0.01 when a disease has no row.
-# Upgrade path is the fraction of unique-map diseases that list the term.
-BACKGROUND = 0.05
-UNANNOTATED = 0.01
 # Frozen before any store run. Refitting these fails the evaluation.
+BACKGROUND_PRIOR = 1
 CLOSE_DISEASE_COUNT = 10
 CLOSE_FACTOR = 2.0
+BACKGROUND_RULE = (
+    "P(feature | not this disease) = (k + 1) / (n + 2); "
+    "k is how many other disorders in these rows list the term "
+    "outside the excluded bin; "
+    "n is how many other disorders are in these rows. "
+    "A disorder with no row uses that rate, so the ratio is 1. "
+    "The rows are Orphadata Science en_product4. phenotype.hpoa is not used."
+)
 NONSPECIFIC_HPO = frozenset({"HP:0001249", "HP:0001250"})
 _FORBIDDEN = ("diagnosis", "pathogenic", "benign")
 NOT_CONSIDERED = (
@@ -50,6 +70,8 @@ class TermEvidence(BaseModel):
     version: str
     lower_ratio: float
     upper_ratio: float
+    background: float
+    zero_reason: Literal["excluded_bin", "obligate_bin"] | None = None
 
 
 class DiseaseScore(BaseModel):
@@ -94,15 +116,28 @@ class ScoreReport(BaseModel):
     )
     leading_orphanet_id: str | None
     margin: float | None
+    margin_fact: str | None
     excluded_disease_count: int
 
 
-def _ratio(presence: str, bound: float) -> float:
+def _ratio(presence: str, bound: float, background: float) -> float:
     if presence == "present":
-        return bound / BACKGROUND
+        return bound / background
     if presence == "excluded":
-        return (1.0 - bound) / (1.0 - BACKGROUND)
+        return (1.0 - bound) / (1.0 - background)
     raise ValueError(presence)
+
+
+def _background(
+    hpo_id: str,
+    orphanet_id: str,
+    n_diseases: int,
+    positive: Mapping[str, set[str]],
+) -> float:
+    holders = positive.get(hpo_id, set())
+    k = len(holders) - (1 if orphanet_id in holders else 0)
+    n_other = max(n_diseases - 1, 0)
+    return (k + BACKGROUND_PRIOR) / (n_other + BACKGROUND_PRIOR + 1)
 
 
 def _relation(presence: str, bin_name: str) -> Relation:
@@ -120,6 +155,8 @@ def _partition(
     mondos_for: dict[str, set[str]] = defaultdict(set)
     orphanets_for: dict[str, set[str]] = defaultdict(set)
     for row in rows:
+        if row.get("corpus_only"):
+            continue
         citation = EvidenceRow.model_validate(
             {
                 "id": row["id"],
@@ -197,7 +234,7 @@ def to_public(
     terms = []
     for disease in report.diseases:
         for term in disease.terms:
-            item = term.model_dump()
+            item = term.model_dump(exclude_none=True)
             item["orphanet_id"] = disease.orphanet_id
             terms.append(item)
     payload: dict = {
@@ -219,9 +256,12 @@ def to_public(
             "excluded_disease_count": report.excluded_disease_count,
             "not_considered": list(NOT_CONSIDERED),
             "questions": asked,
+            "background_rule": BACKGROUND_RULE,
         },
         "margin": report.margin,
     }
+    if report.margin_fact is not None:
+        payload["margin_fact"] = report.margin_fact
     if probability is not None and _curve_ok(reliability_curve):
         payload["probability"] = probability
         payload["reliability_curve"] = [dict(point) for point in reliability_curve or []]
@@ -295,11 +335,46 @@ def suggest_questions(
     return sorted(found)
 
 
+# ponytail: cache key is (id, len). An in-place edit of a row is not seen.
+# Upgrade: drop the cache if each call copies the rows.
+_PREPARED: dict[tuple[int, int], tuple] = {}
+
+
+def _corpus(rows: Sequence[Mapping]) -> tuple[int, dict[str, set[str]]]:
+    diseases: set[str] = set()
+    positive: dict[str, set[str]] = defaultdict(set)
+    for row in rows:
+        if "clinvar" in str(row.get("source", "")).casefold():
+            continue
+        orphanet_id = row.get("orphanet_id")
+        hpo_id = row.get("hpo_id")
+        bin_name = row.get("bin")
+        if not orphanet_id or not hpo_id or not bin_name:
+            continue
+        orpha = str(orphanet_id)
+        diseases.add(orpha)
+        if str(bin_name) != "excluded":
+            positive[str(hpo_id)].add(orpha)
+    return len(diseases), positive
+
+
+def _prepare(rows: Sequence[Mapping]) -> tuple:
+    key = (id(rows), len(rows))
+    cached = _PREPARED.get(key)
+    if cached is not None:
+        return cached
+    grouped, scoreable, excluded = _partition(rows)
+    n_diseases, positive = _corpus(rows)
+    cached = (grouped, scoreable, excluded, n_diseases, positive)
+    _PREPARED[key] = cached
+    return cached
+
+
 def catalogue_score(
     accepted_hpo: Sequence[tuple[str, Presence]],
     rows: Sequence[Mapping],
 ) -> ScoreReport:
-    grouped, scoreable, excluded = _partition(rows)
+    grouped, scoreable, excluded, n_diseases, positive = _prepare(rows)
 
     diseases: list[DiseaseScore] = []
     for orphanet_id in sorted(scoreable):
@@ -309,21 +384,27 @@ def catalogue_score(
         lower = 1.0
         upper = 1.0
         for hpo_id, presence in accepted_hpo:
+            background = _background(hpo_id, orphanet_id, n_diseases, positive)
             row = by_hpo.get(hpo_id)
+            zero_reason: Literal["excluded_bin", "obligate_bin"] | None = None
             if row is None:
-                lower_ratio = _ratio(presence, UNANNOTATED)
-                upper_ratio = _ratio(presence, UNANNOTATED)
+                lower_ratio = 1.0
+                upper_ratio = 1.0
                 relation: Relation = "does_not_support"
                 source = str(disease_rows[0]["source"])
                 version = str(disease_rows[0]["version"])
             else:
                 bin_name = str(row["bin"])
                 lo, hi = BINS[bin_name]
-                lower_ratio = _ratio(presence, lo)
-                upper_ratio = _ratio(presence, hi)
+                lower_ratio = _ratio(presence, lo, background)
+                upper_ratio = _ratio(presence, hi, background)
                 relation = _relation(presence, bin_name)
                 source = str(row["source"])
                 version = str(row["version"])
+                if presence == "present" and bin_name == "excluded":
+                    zero_reason = "excluded_bin"
+                elif presence == "excluded" and bin_name == "obligate":
+                    zero_reason = "obligate_bin"
             lower *= lower_ratio
             upper *= upper_ratio
             terms.append(
@@ -334,6 +415,8 @@ def catalogue_score(
                     version=version,
                     lower_ratio=lower_ratio,
                     upper_ratio=upper_ratio,
+                    background=background,
+                    zero_reason=zero_reason,
                 )
             )
         diseases.append(
@@ -347,12 +430,14 @@ def catalogue_score(
         )
     diseases.sort(key=lambda disease: (-disease.lower_ratio, disease.orphanet_id))
     leading, reason = _separate(diseases)
+    margin, margin_fact = _margin(diseases)
     return ScoreReport(
         diseases=diseases,
         confident=reason is None,
         abstain_reason=reason,
         leading_orphanet_id=leading,
-        margin=_margin(diseases),
+        margin=margin,
+        margin_fact=margin_fact,
         excluded_disease_count=excluded,
     )
 
@@ -387,7 +472,42 @@ def _separate(diseases: list[DiseaseScore]) -> tuple[str | None, str | None]:
     return lower_leader, None
 
 
-def _margin(diseases: list[DiseaseScore]) -> float | None:
-    if len(diseases) < 2 or diseases[1].lower_ratio == 0:
-        return None
-    return diseases[0].lower_ratio / diseases[1].lower_ratio
+def _ids(terms: list[TermEvidence]) -> str:
+    return ", ".join(term.hpo_id for term in terms)
+
+
+def _margin_fact(diseases: list[DiseaseScore]) -> str | None:
+    if len(diseases) < 2:
+        return "no runner-up"
+    runner = diseases[1]
+    leader = diseases[0].lower_ratio
+    if runner.lower_ratio != 0 and math.isfinite(leader):
+        if math.isfinite(leader / runner.lower_ratio):
+            return None
+    if runner.lower_ratio == 0 and leader == 0:
+        return f"leading lower ratio is 0 and runner-up {runner.orphanet_id} lower ratio is 0"
+    if runner.lower_ratio == 0:
+        zeros = [term for term in runner.terms if term.zero_reason is not None]
+        excluded = [term for term in zeros if term.zero_reason == "excluded_bin"]
+        obligate = [term for term in zeros if term.zero_reason == "obligate_bin"]
+        if excluded and obligate:
+            return (
+                f"runner-up {runner.orphanet_id} has an excluded term {_ids(excluded)} "
+                f"and {_ids(obligate)} is obligate against an excluded observation"
+            )
+        if excluded:
+            return f"runner-up {runner.orphanet_id} has an excluded term {_ids(excluded)}"
+        if obligate:
+            return (
+                f"runner-up {runner.orphanet_id} lower ratio is 0 because "
+                f"{_ids(obligate)} is obligate against an excluded observation"
+            )
+        return f"runner-up {runner.orphanet_id} lower ratio is 0"
+    return "margin is not a finite number"
+
+
+def _margin(diseases: list[DiseaseScore]) -> tuple[float | None, str | None]:
+    fact = _margin_fact(diseases)
+    if fact is not None:
+        return None, fact
+    return diseases[0].lower_ratio / diseases[1].lower_ratio, None

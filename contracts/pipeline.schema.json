@@ -183,7 +183,8 @@
         "version": {"type": "string", "minLength": 1},
         "orphanet_id": {"type": "string", "minLength": 1},
         "lower_ratio": {"type": "number"},
-        "upper_ratio": {"type": "number"}
+        "upper_ratio": {"type": "number"},
+        "background": {"type": "number"}
       }
     },
     "ReliabilityPoint": {
@@ -213,6 +214,7 @@
           "items": {"$ref": "#/$defs/TermEvidence"}
         },
         "margin": {"type": ["number", "null"]},
+        "margin_fact": {"type": "string", "minLength": 1},
         "abstained": {"type": "boolean"},
         "probability": {"type": "number", "minimum": 0, "maximum": 1},
         "reliability_curve": {

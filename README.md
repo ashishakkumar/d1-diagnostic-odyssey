@@ -37,6 +37,20 @@ make ingest-replay
 
 `make test` resets the database, builds the TypeScript contract, and runs the gate tests and the contract round-trip.
 
+## Catalogue comparison
+
+The scorer is ordinary code. It does not call a model.
+
+For a term a disorder lists, the likelihood ratio is the Orphanet bin bound divided by P(feature | not this disease). That rate comes from Orphadata Science `en_product4` (CC BY 4.0), every disorder in the file that has an HPO association, including disorders that are not ranked. A disorder counts as having the feature when the bin is not excluded. For the disorder being scored, k is how many other disorders have the feature and n is how many other disorders are in the file. The rate is (k + 1) / (n + 2). The added counts are a uniform prior: a term no other disorder lists is not treated as impossible, and a term every other disorder lists does not make the absent-feature rate zero. The prior is frozen. It was not fitted to Phenopacket Store.
+
+`phenotype.hpoa` is not used. Its annotation guide says inferred rows are parsed from OMIM, and OMIM has to be contacted before another product reuses them.
+
+When a disorder has no row for a term, the frequency used for that disorder is the same rate, so the ratio is 1. A missing row is not evidence.
+
+Abstention stays at 10 disorders within a factor of 2, and at a flip of the first row between the bin bounds. Those constants were not refit.
+
+When the runner-up's lower ratio is 0 because a present term is in the excluded bin, the margin is not a finite number. The report says the runner-up has an excluded term and names it. A lower ratio of 0 because the person does not have a term the catalogue marks obligate is described that way, and is not called an excluded term. One scoreable disorder is reported as no runner-up.
+
 ## Read this first
 
 1. [PLAN.md](PLAN.md) — the evidence design, the approval gate, and the two-track decision.

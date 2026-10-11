@@ -136,6 +136,7 @@ class TermEvidence(BaseModel):
     orphanet_id: constr(min_length=1) | None = None
     lower_ratio: float | None = None
     upper_ratio: float | None = None
+    background: float | None = None
 
 
 class ReliabilityPoint(BaseModel):
@@ -160,6 +161,7 @@ class Report(BaseModel):
     )
     evidence: list[TermEvidence]
     margin: float | None
+    margin_fact: constr(min_length=1) | None = None
     abstained: bool
     probability: confloat(ge=0.0, le=1.0) | None = None
     reliability_curve: list[ReliabilityPoint] | None = Field(None, min_length=2)

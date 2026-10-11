@@ -113,7 +113,19 @@ def _check(dest: Path) -> int:
     return 0
 
 
+def _archive_previous(previous: str) -> str:
+    """Keep the earlier frequency-bin 0.0.1 document when a new run is written."""
+    marker = "| full | frequency-bin | 0.0.1 |"
+    if marker not in previous:
+        return ""
+    heading = previous.rfind("# Public-case method results", 0, previous.find(marker))
+    if heading == -1:
+        return previous
+    return previous[heading:].lstrip("\n")
+
+
 def _store(data: Path, out: Path) -> int:
+    previous = out.read_text() if out.is_file() else ""
     pins = load_pins()
     check_store_file(data / "all_phenopackets.zip", pins)
     loaded = load_cases(data / "all_phenopackets.zip")
@@ -167,6 +179,11 @@ def _store(data: Path, out: Path) -> int:
         text += "hpo parent map was not loaded, so vaguer left the terms as they were.\n"
     text += f"packets_skipped: {loaded.skipped}\n"
     text += f"orphanet: {frequency_status}\n"
+    archived = _archive_previous(previous)
+    if archived:
+        text = text.rstrip() + "\n\n" + archived
+        if not text.endswith("\n"):
+            text += "\n"
     out.write_text(text)
     full = rows[0][1]
     print(f"excluded_diseases={excluded}")
@@ -193,7 +210,9 @@ def _frequency_rows(
 ) -> tuple[str, str]:
     note = (
         "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
-        "Abstentions are misses. The scorer thresholds were not changed for this run."
+        "P(feature | not this disease) is the leave-one-out rate (k + 1) / (n + 2) "
+        "across disorders in en_product4. A disorder with no row contributes a ratio of 1. "
+        "Abstentions are misses. The abstention constants were not changed for this run."
     )
     if not xml_path.is_file():
         reason = (
@@ -224,7 +243,7 @@ def _frequency_rows(
                 pins,
                 note,
                 tool="frequency-bin",
-                tool_version="0.0.1",
+                tool_version="0.0.2",
             ),
             status,
         )

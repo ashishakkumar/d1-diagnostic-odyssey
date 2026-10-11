@@ -149,6 +149,7 @@ export interface ApprovalRecord {
 export interface Report {
   evidence: TermEvidence[];
   margin: number | null;
+  margin_fact?: string;
   abstained: boolean;
   probability?: number;
   /**
@@ -170,6 +171,7 @@ export interface TermEvidence {
   orphanet_id?: string;
   lower_ratio?: number;
   upper_ratio?: number;
+  background?: number;
 }
 /**
  * One point on a reliability curve. predicted and observed are both between 0 and 1.

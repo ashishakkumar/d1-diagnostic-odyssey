@@ -5,8 +5,9 @@ from pathlib import Path
 import phenopackets.schema.v2 as pps2
 import pytest
 from google.protobuf.json_format import MessageToDict
-from scoring.catalogue import BACKGROUND, CLOSE_DISEASE_COUNT, CLOSE_FACTOR
+from scoring.catalogue import BACKGROUND_PRIOR, CLOSE_DISEASE_COUNT, CLOSE_FACTOR
 
+from app.routes.ports import report_for
 from d1_contracts import EvidenceRow
 from scoring import (
     GeneFit,
@@ -18,10 +19,11 @@ from scoring import (
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
-# Frozen background is 0.05. Present-term ratio = bin bound / 0.05.
-# ORPHA:9000001 obligate 1.0 -> 20, very frequent 0.80 and 0.99 -> 16 and 19.8.
-# Products: 20 * 16 = 320 and 20 * 19.8 = 396.
-# ORPHA:9000002 very rare 0.01 and 0.04 -> 0.2 and 0.8, excluded bound 0 -> product 0.
+# Leave-one-out rate is (k + 1) / (n + 2) on the two fixture disorders.
+# HP:0001166 is listed on both, so p = 2/3 and an obligate ratio is 1.5.
+# HP:0000272 is excluded on ORPHA:9000002, so for ORPHA:9000001 p = 1/3.
+# Very frequent 0.80 and 0.99 become 2.4 and 2.97. Products: 3.6 and 4.455.
+# ORPHA:9000002's excluded bin still makes the product 0.
 
 
 def frequency_rows() -> list[dict]:
@@ -58,8 +60,8 @@ def test_frequency_bounds_score_each_disease_and_keep_term_evidence() -> None:
     leader = by_id["ORPHA:9000001"]
     other = by_id["ORPHA:9000002"]
     assert leader.mondo_id == "MONDO:8000001"
-    assert leader.lower_ratio == pytest.approx(320)
-    assert leader.upper_ratio == pytest.approx(396)
+    assert leader.lower_ratio == pytest.approx(3.6)
+    assert leader.upper_ratio == pytest.approx(4.455)
     assert other.lower_ratio == pytest.approx(0)
     assert other.upper_ratio == pytest.approx(0)
     assert report.diseases[0].orphanet_id == "ORPHA:9000001"
@@ -69,14 +71,16 @@ def test_frequency_bounds_score_each_disease_and_keep_term_evidence() -> None:
     assert arachnodactyly.relation == "supports"
     assert arachnodactyly.source == "orphanet-en_product4"
     assert arachnodactyly.version == "2026-06-23-synthetic"
-    assert arachnodactyly.lower_ratio == pytest.approx(20)
-    assert arachnodactyly.upper_ratio == pytest.approx(20)
+    assert arachnodactyly.lower_ratio == pytest.approx(1.5)
+    assert arachnodactyly.upper_ratio == pytest.approx(1.5)
+    assert arachnodactyly.background == pytest.approx(2 / 3)
     malar = leader_terms["HP:0000272"]
     assert malar.relation == "supports"
     assert malar.source == "orphanet-en_product4"
     assert malar.version == "2026-06-23-synthetic"
-    assert malar.lower_ratio == pytest.approx(16)
-    assert malar.upper_ratio == pytest.approx(19.8)
+    assert malar.lower_ratio == pytest.approx(2.4)
+    assert malar.upper_ratio == pytest.approx(2.97)
+    assert malar.background == pytest.approx(1 / 3)
 
     other_terms = {term.hpo_id: term for term in other.terms}
     assert other_terms["HP:0001166"].relation == "supports"
@@ -86,7 +90,7 @@ def test_frequency_bounds_score_each_disease_and_keep_term_evidence() -> None:
 
 
 def test_a_term_missing_from_the_disease_does_not_support_it() -> None:
-    # Unannotated stand-in is 0.01, so the ratio is 0.01 / 0.05 = 0.2 at both bounds.
+    # HP:0001251 is on neither disorder, so p = 1/3 and the ratio is 1.
     report = catalogue_score(
         [
             ("HP:0001166", "present"),
@@ -97,20 +101,22 @@ def test_a_term_missing_from_the_disease_does_not_support_it() -> None:
     )
     leader = report.diseases[0]
     assert leader.orphanet_id == "ORPHA:9000001"
-    assert leader.lower_ratio == pytest.approx(64)
-    assert leader.upper_ratio == pytest.approx(79.2)
+    assert leader.lower_ratio == pytest.approx(3.6)
+    assert leader.upper_ratio == pytest.approx(4.455)
     missing = {term.hpo_id: term for term in leader.terms}["HP:0001251"]
     assert missing.relation == "does_not_support"
     assert missing.source == "orphanet-en_product4"
     assert missing.version == "2026-06-23-synthetic"
-    assert missing.lower_ratio == pytest.approx(0.2)
-    assert missing.upper_ratio == pytest.approx(0.2)
+    assert missing.lower_ratio == pytest.approx(1)
+    assert missing.upper_ratio == pytest.approx(1)
+    assert missing.background == pytest.approx(1 / 3)
 
 
 def test_an_excluded_term_supports_only_an_excluded_bin() -> None:
-    # Patient excludes HP:0000272. Ratio is (1 - bound) / 0.95.
-    # ORPHA:9000001 very frequent: (1-0.80)/0.95 and (1-0.99)/0.95, times present obligate 20.
-    # ORPHA:9000002 excluded bin: (1-0)/0.95, times present very-rare 0.2 and 0.8.
+    # Patient excludes HP:0000272. Ratio is (1 - bound) / (1 - p).
+    # ORPHA:9000001 very frequent, p = 1/3: (1-0.80)/(2/3) and (1-0.99)/(2/3).
+    # Present obligate uses p = 2/3, ratio 1.5.
+    # ORPHA:9000002 excluded bin, p = 2/3: (1-0)/(1/3) = 3.
     report = catalogue_score(
         [("HP:0001166", "present"), ("HP:0000272", "excluded")],
         frequency_rows(),
@@ -119,18 +125,18 @@ def test_an_excluded_term_supports_only_an_excluded_bin() -> None:
     listed = {term.hpo_id: term for term in by_id["ORPHA:9000001"].terms}["HP:0000272"]
     excluded_bin = {term.hpo_id: term for term in by_id["ORPHA:9000002"].terms}["HP:0000272"]
     assert listed.relation == "does_not_support"
-    assert listed.lower_ratio == pytest.approx(0.20 / 0.95)
-    assert listed.upper_ratio == pytest.approx(0.01 / 0.95)
-    assert by_id["ORPHA:9000001"].lower_ratio == pytest.approx(20 * 0.20 / 0.95)
+    assert listed.lower_ratio == pytest.approx(0.3)
+    assert listed.upper_ratio == pytest.approx(0.015)
+    assert by_id["ORPHA:9000001"].lower_ratio == pytest.approx(0.45)
     assert excluded_bin.relation == "supports"
-    assert excluded_bin.lower_ratio == pytest.approx(1 / 0.95)
-    assert by_id["ORPHA:9000002"].lower_ratio == pytest.approx(0.2 / 0.95)
+    assert excluded_bin.lower_ratio == pytest.approx(3)
+    assert by_id["ORPHA:9000002"].lower_ratio == pytest.approx(0.045)
 
 
 def test_abstain_thresholds_stay_at_the_plan_values() -> None:
     assert CLOSE_DISEASE_COUNT == 10
     assert CLOSE_FACTOR == 2
-    assert BACKGROUND == 0.05
+    assert BACKGROUND_PRIOR == 1
 
 
 def test_ten_diseases_within_a_factor_of_two_are_not_confident() -> None:
@@ -151,8 +157,9 @@ def test_ten_diseases_within_a_factor_of_two_are_not_confident() -> None:
 
 
 def test_top_disease_flips_between_bin_bounds() -> None:
-    # Lower products: obligate * very_rare = 20 * 0.2 = 4, occasional * occasional = 1.
-    # Upper products: 20 * 0.8 = 16, and (0.29/0.05) ** 2 = 33.64.
+    # Both disorders list both terms, so p = 2/3.
+    # Lower products: 1.5 * 0.015 = 0.0225, and 0.075 ** 2 = 0.005625.
+    # Upper products: 1.5 * 0.06 = 0.09, and 0.435 ** 2 = 0.189225.
     rows = [
         frequency_row(401, "ORPHA:9000021", "MONDO:8000021", "HP:0001166", "obligate"),
         frequency_row(402, "ORPHA:9000021", "MONDO:8000021", "HP:0000272", "very_rare"),
@@ -164,10 +171,10 @@ def test_top_disease_flips_between_bin_bounds() -> None:
         rows,
     )
     by_id = {disease.orphanet_id: disease for disease in report.diseases}
-    assert by_id["ORPHA:9000021"].lower_ratio == pytest.approx(4)
-    assert by_id["ORPHA:9000022"].lower_ratio == pytest.approx(1)
-    assert by_id["ORPHA:9000021"].upper_ratio == pytest.approx(16)
-    assert by_id["ORPHA:9000022"].upper_ratio == pytest.approx(33.64)
+    assert by_id["ORPHA:9000021"].lower_ratio == pytest.approx(0.0225)
+    assert by_id["ORPHA:9000022"].lower_ratio == pytest.approx(0.005625)
+    assert by_id["ORPHA:9000021"].upper_ratio == pytest.approx(0.09)
+    assert by_id["ORPHA:9000022"].upper_ratio == pytest.approx(0.189225)
     assert report.confident is False
     assert report.abstain_reason == "top_flips_between_bounds"
     assert report.leading_orphanet_id is None
@@ -182,6 +189,70 @@ def test_a_tie_for_first_is_not_confident() -> None:
     assert report.confident is False
     assert report.abstain_reason == "tied_for_first"
     assert report.margin == pytest.approx(1)
+
+
+def test_a_zero_runner_up_states_the_excluded_term() -> None:
+    """A lower ratio of 0 is not a blank margin. The report names the excluded term."""
+    report = catalogue_score(
+        [("HP:0001166", "present"), ("HP:0000272", "present")],
+        frequency_rows(),
+    )
+    public = to_public(report)
+    runner_up = report.diseases[1]
+    assert runner_up.orphanet_id == "ORPHA:9000002"
+    assert runner_up.lower_ratio == pytest.approx(0)
+    assert public["margin"] is None
+    fact = public["margin_fact"]
+    assert "runner-up" in fact
+    assert "excluded term" in fact
+    assert "ORPHA:9000002" in fact
+    assert "HP:0000272" in fact
+    assert public["margin"] is not None or public["margin_fact"]
+
+
+def test_a_zero_from_an_obligate_bin_is_not_called_an_excluded_term() -> None:
+    rows = [
+        frequency_row(901, "ORPHA:9000091", "MONDO:8000091", "HP:0001166", "obligate"),
+        frequency_row(902, "ORPHA:9000092", "MONDO:8000092", "HP:0001166", "very_rare"),
+    ]
+    report = catalogue_score([("HP:0001166", "excluded")], rows)
+    public = to_public(report)
+    assert report.diseases[1].orphanet_id == "ORPHA:9000091"
+    assert report.diseases[1].lower_ratio == pytest.approx(0)
+    fact = public["margin_fact"]
+    assert "obligate" in fact
+    assert "HP:0001166" in fact
+    assert "excluded term" not in fact
+
+
+def test_the_notebook_report_names_the_excluded_term() -> None:
+    body = report_for([("HP:0001166", "present"), ("HP:0000272", "present")])
+    assert body["margin"] is None
+    assert "excluded term" in body["margin_fact"]
+    assert "HP:0000272" in body["margin_fact"]
+
+
+def test_background_is_the_leave_one_out_corpus_frequency() -> None:
+    """P(feature | not this disease) is (k + 1) / (n + 2), not a fixed 0.05 or 0.01."""
+    report = catalogue_score([("HP:0001166", "present")], frequency_rows())
+    leader = next(disease for disease in report.diseases if disease.orphanet_id == "ORPHA:9000001")
+    term = next(item for item in leader.terms if item.hpo_id == "HP:0001166")
+    # The other disease lists HP:0001166 outside the excluded bin. n = 1, k = 1.
+    assert term.background == pytest.approx(2 / 3)
+    assert term.lower_ratio == pytest.approx(1.0 / (2 / 3))
+    assert term.upper_ratio == pytest.approx(1.0 / (2 / 3))
+    assert "(k + 1) / (n + 2)" in to_public(report)["evidence"]["background_rule"]
+
+
+def test_a_missing_row_uses_the_corpus_frequency_not_a_fixed_stand_in() -> None:
+    """No row means the disease rate is the corpus rate, so the ratio is 1."""
+    report = catalogue_score([("HP:0001251", "present")], frequency_rows())
+    term = report.diseases[0].terms[0]
+    # Neither disease lists HP:0001251. n = 1, k = 0, so the rate is 1/3.
+    assert term.background == pytest.approx(1 / 3)
+    assert term.lower_ratio == pytest.approx(1)
+    assert term.upper_ratio == pytest.approx(1)
+    assert term.relation == "does_not_support"
 
 
 def test_a_separated_leader_keeps_a_margin() -> None:
@@ -297,7 +368,8 @@ def _scored():
 
 def test_without_a_reliability_curve_the_output_is_evidence_and_margin() -> None:
     public = to_public(_scored(), probability=0.4)
-    assert set(public) == {"evidence", "margin"}
+    assert set(public) == {"evidence", "margin", "margin_fact"}
+    assert "excluded term" in public["margin_fact"]
     assert "probability" not in json.dumps(public)
     term = public["evidence"]["terms"][0]
     assert term["source"] == "orphanet-en_product4"
@@ -313,7 +385,7 @@ def test_a_probability_appears_only_beside_its_reliability_curve() -> None:
     public = to_public(_scored(), probability=0.4, reliability_curve=curve)
     assert public["probability"] == 0.4
     assert public["reliability_curve"] == curve
-    assert set(public) == {"evidence", "margin", "probability", "reliability_curve"}
+    assert set(public) == {"evidence", "margin", "margin_fact", "probability", "reliability_curve"}
 
 
 def test_a_short_or_out_of_range_curve_does_not_unlock_a_probability() -> None:
@@ -331,8 +403,8 @@ def test_a_short_or_out_of_range_curve_does_not_unlock_a_probability() -> None:
             {"predicted": 0.2, "observed": 0.1},
         ],
     )
-    assert set(one_point) == {"evidence", "margin"}
-    assert set(out_of_range) == {"evidence", "margin"}
+    assert set(one_point) == {"evidence", "margin", "margin_fact"}
+    assert set(out_of_range) == {"evidence", "margin", "margin_fact"}
 
 
 def test_public_questions_drop_nonspecific_terms() -> None:

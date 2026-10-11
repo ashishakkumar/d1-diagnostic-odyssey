@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from d1_eval.__main__ import main
+from d1_eval.__main__ import _archive_previous, main
 from d1_eval.harness import (
     DiseaseScore,
     TermOverlapScorer,
@@ -278,6 +278,15 @@ def test_results_table_records_tool_and_data_versions() -> None:
     assert "2/3" in text
     assert "excluded_diseases" in text
     assert "| 2 |" in text or text.count("2") > 0
+
+
+def test_a_later_store_run_keeps_the_frequency_bin_0_0_1_rows() -> None:
+    earlier = "# Public-case method results\n\n| full | frequency-bin | 0.0.1 |\n"
+    assert "0.0.1" in _archive_previous(earlier)
+    later = "# Public-case method results\n\n| full | frequency-bin | 0.0.2 |\n\n" + earlier
+    archived = _archive_previous(later)
+    assert "0.0.2" not in archived
+    assert "| full | frequency-bin | 0.0.1 |" in archived
 
 
 def test_results_document_can_name_the_frequency_scorer_version() -> None:

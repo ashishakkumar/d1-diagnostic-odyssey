@@ -98,10 +98,13 @@ def test_a_synthetic_case_scores_a_change_and_scans_clean(client: TestClient) ->
     product = 1.0
     for item in leader:
         product *= item.lower_ratio
-    assert product == pytest.approx(320)
+    assert product == pytest.approx(3.6)
     # The other disease's present term is in the excluded bin, so its lower
-    # ratio is 0. The scorer leaves margin empty rather than dividing by zero.
+    # ratio is 0. The margin is not a number. The report names that term.
     assert parsed.margin is None
+    assert parsed.margin_fact is not None
+    assert "excluded term" in parsed.margin_fact
+    assert "HP:0000272" in parsed.margin_fact
     assert parsed.evidence
     assert "probability" not in body
     assert "reliability_curve" not in body
