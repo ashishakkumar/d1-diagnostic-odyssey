@@ -19,6 +19,7 @@ from d4_llm.fallback import (
     cache_key,
     complete,
     gazetteer,
+    is_rate_limited,
 )
 
 MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -68,6 +69,11 @@ def choose_model(models: list[dict]) -> str:
     return sorted(ids, key=rank)[0]
 
 
+def _rate_limited(status: int, response: Any) -> bool:
+    body = str(getattr(response, "text", "") or "").casefold().replace("-", "_")
+    return status == 429 or "resource_exhausted" in body
+
+
 def _version(model_id: str) -> tuple[int, int]:
     match = re.search(r"(\d+)(?:\.(\d+))?", model_id)
     if match is None:
@@ -89,7 +95,7 @@ def load_models(
             url = f"{MODELS_URL}?{urlencode({'pageToken': page_token})}"
         response = sender(url, {"x-goog-api-key": key})
         status = int(getattr(response, "status_code", 0))
-        if status == 429:
+        if _rate_limited(status, response):
             raise RuntimeError("429 RESOURCE_EXHAUSTED")
         if status >= 400:
             raise RuntimeError(f"Gemini models list returned {status}")
@@ -126,8 +132,8 @@ def gemini_text(
         },
     )
     status = int(getattr(response, "status_code", 0))
-    if status == 429:
-        raise RuntimeError(f"429 {getattr(response, 'text', '')}")
+    if _rate_limited(status, response):
+        raise RuntimeError("429 RESOURCE_EXHAUSTED")
     if status >= 400:
         raise RuntimeError(f"Gemini returned {status}")
     payload = response.json()
@@ -176,11 +182,29 @@ def complete_with_gemini(
     key = str(env.get("GEMINI_API_KEY") or env.get("GOOGLE_API_KEY") or "").strip()
     if not key:
         return gazetteer("no_key", log_path=log_path)
-    chosen = choose_model(load_models(key, get=get))
+    denied: BaseException | None = None
+    chosen = ""
+    try:
+        chosen = choose_model(load_models(key, get=get))
+    except Exception as exc:
+        if not is_rate_limited(exc):
+            raise
+        denied = exc
+
+    def raise_denied(_prompt: str) -> str:
+        assert denied is not None
+        raise denied
+
     sender = post if post is not None else _http_post
+    if denied is not None:
+        primary = raise_denied
+        recorded = None
+    else:
+        primary = make_gemini_primary(key=key, model=chosen, post=sender)
+        recorded = chosen
     return complete(
         prompt,
-        primary=make_gemini_primary(key=key, model=chosen, post=sender),
+        primary=primary,
         cache=cache,
         schema=schema,
         state=state,
@@ -191,7 +215,7 @@ def complete_with_gemini(
         sleep=sleep,
         post=post,
         log_path=log_path,
-        primary_model=chosen,
+        primary_model=recorded,
     )
 
 

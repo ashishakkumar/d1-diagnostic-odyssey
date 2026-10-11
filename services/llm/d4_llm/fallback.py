@@ -22,6 +22,13 @@ import httpx
 SYNTHETIC_MARK = "SYNTHETIC-ONLY"
 COOLDOWN_SECONDS = 60.0
 _MAX_TRIES = 3
+# Priced-zero ids from GET https://openrouter.ai/api/v1/models on 2026-10-11.
+# A set OPENROUTER_FREE_MODELS replaces this list. A blank value does not.
+DEFAULT_OPENROUTER_FREE_MODELS: tuple[str, ...] = (
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+)
 
 Provider = Literal["gemini", "openrouter", "gazetteer"]
 
@@ -106,6 +113,18 @@ def free_model_ids(raw: str) -> list[str]:
     rejected = [model for model in models if not model.endswith(":free")]
     if rejected:
         raise ValueError("only :free models allowed")
+    return models
+
+
+def configured_free_models(env: Mapping[str, str]) -> list[str]:
+    """The checked-in :free list, unless OPENROUTER_FREE_MODELS names another."""
+    raw = env.get("OPENROUTER_FREE_MODELS")
+    if raw is None or not str(raw).strip():
+        models = list(DEFAULT_OPENROUTER_FREE_MODELS)
+    else:
+        models = free_model_ids(str(raw))
+    if not models:
+        raise ValueError("OPENROUTER_FREE_MODELS has no :free id")
     return models
 
 
@@ -232,7 +251,7 @@ def complete(
     env = os.environ if environ is None else environ
     chosen = models
     if chosen is None:
-        chosen = free_model_ids(str(env.get("OPENROUTER_FREE_MODELS") or ""))
+        chosen = configured_free_models(env)
     else:
         free_model_ids(",".join(chosen))
 

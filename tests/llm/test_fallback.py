@@ -14,6 +14,7 @@ from d4_llm import (
     complete_or_degrade,
     is_rate_limited,
 )
+from d4_llm.fallback import DEFAULT_OPENROUTER_FREE_MODELS, configured_free_models
 
 ROOT = Path(__file__).resolve().parents[2]
 PROMPT = "SYNTHETIC-ONLY reply with pong"
@@ -143,14 +144,31 @@ def test_a_429_without_a_key_degrades_to_the_gazetteer(tmp_path: Path) -> None:
     assert "pinned wording" in degraded.text
 
 
-def test_a_key_without_a_free_model_list_does_not_call_openrouter(tmp_path: Path) -> None:
+def test_the_default_free_model_list_is_non_empty() -> None:
+    assert DEFAULT_OPENROUTER_FREE_MODELS
+    assert all(model.endswith(":free") for model in DEFAULT_OPENROUTER_FREE_MODELS)
+    assert configured_free_models({}) == list(DEFAULT_OPENROUTER_FREE_MODELS)
+    assert configured_free_models({"OPENROUTER_FREE_MODELS": ""}) == list(
+        DEFAULT_OPENROUTER_FREE_MODELS
+    )
+    assert configured_free_models({"OPENROUTER_FREE_MODELS": "   "}) == list(
+        DEFAULT_OPENROUTER_FREE_MODELS
+    )
+    with pytest.raises(ValueError, match=":free"):
+        configured_free_models({"OPENROUTER_FREE_MODELS": "example/paid"})
+
+
+def test_an_unset_free_model_list_calls_the_default(tmp_path: Path) -> None:
+    seen: list[str] = []
+
     def primary(_prompt: str) -> str:
         raise Quota()
 
-    def post(*_args: object) -> _Response:
-        raise AssertionError("openrouter")
+    def post(_url: str, _headers: dict, payload: dict) -> _Response:
+        seen.append(str(payload["model"]))
+        return _Response(200, {"choices": [{"message": {"content": "pong"}}]})
 
-    degraded = complete_or_degrade(
+    result = complete(
         PROMPT,
         primary=primary,
         cache=_cache(tmp_path),
@@ -159,8 +177,33 @@ def test_a_key_without_a_free_model_list_does_not_call_openrouter(tmp_path: Path
         sleep=lambda _seconds: None,
         post=post,
     )
-    assert degraded.provider == "gazetteer"
-    assert "pinned wording" in degraded.text
+    assert result.provider == "openrouter"
+    assert result.model == DEFAULT_OPENROUTER_FREE_MODELS[0]
+    assert seen == [DEFAULT_OPENROUTER_FREE_MODELS[0]]
+
+
+def test_a_set_free_model_list_replaces_the_default(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        raise Quota()
+
+    def post(_url: str, _headers: dict, payload: dict) -> _Response:
+        assert payload["model"] == "example/other:free"
+        return _Response(200, {"choices": [{"message": {"content": "pong"}}]})
+
+    result = complete(
+        PROMPT,
+        primary=primary,
+        cache=_cache(tmp_path),
+        environ={
+            "OPENROUTER_API_KEY": "test-key",
+            "OPENROUTER_FREE_MODELS": "example/other:free",
+        },
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        post=post,
+    )
+    assert result.provider == "openrouter"
+    assert result.model == "example/other:free"
 
 
 def test_a_model_id_without_the_free_suffix_is_rejected(tmp_path: Path) -> None:

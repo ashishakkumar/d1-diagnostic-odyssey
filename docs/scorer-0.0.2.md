@@ -14,11 +14,11 @@ Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions. It is h
 
 An ancestor climb (depth 8, stop at HP:0000001 and HP:0000118) was measured on the older flat background of 0.05. Full-set top-1 fell from 1292/4815 to 841/4815. That climb was not rerun on the corpus background, so 841/4815 is not a 0.0.2 result. The notebook and `d1_eval store` do not pass a parent map. The function remains for a caller that passes parents. Thresholds were not refit on a training split or on the held-out split.
 
-## Not run, so not a pass
+## NOT MEASURED / pending
 
-`PLAN.md` requires the catalogue comparison to beat a degree baseline at k = 1 and k = 5 on both percentage@k and precision@k, with percentage@k over the 249 unique-map diseases. That baseline was not run. precision@k at k = 1 and k = 5 was not run. Those bars are not a pass.
+`PLAN.md` requires the catalogue comparison to beat a degree baseline at k = 1 and k = 5 on both percentage@k and precision@k, with percentage@k over the 249 unique-map diseases. The degree baseline is NOT MEASURED / pending. precision@k at k = 1 and k = 5 is NOT MEASURED / pending. Those bars are not a pass.
 
-A decoy gene does not change the disease rank in `tests/eval/test_harness.py`. A store-scale decoy-gene evaluation was not run.
+A decoy gene does not change the disease rank in `tests/eval/test_harness.py`. A store-scale decoy-gene evaluation is NOT MEASURED / pending.
 
 ## 0.0.1, kept for comparison
 

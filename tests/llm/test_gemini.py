@@ -177,6 +177,76 @@ def test_complete_with_gemini_records_the_chosen_model(tmp_path: Path) -> None:
     assert calls["post"] == 1
 
 
+def test_a_resource_exhausted_body_uses_openrouter(tmp_path: Path) -> None:
+    def get(_url: str, _headers: dict) -> _Response:
+        return _Response(200, {"models": [FLASH]})
+
+    def post(url: str, _headers: dict, payload: dict) -> _Response:
+        if "generativelanguage.googleapis.com" in url:
+            return _Response(503, text="RESOURCE_EXHAUSTED")
+        assert str(payload["model"]).endswith(":free")
+        return _Response(200, {"choices": [{"message": {"content": "pong"}}]})
+
+    result = complete_with_gemini(
+        "SYNTHETIC-ONLY reply with pong",
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={"GEMINI_API_KEY": "secret-key", "OPENROUTER_API_KEY": "or-key"},
+        root=tmp_path,
+        get=get,
+        post=post,
+        sleep=lambda _seconds: None,
+    )
+    assert result.provider == "openrouter"
+    assert result.model == "example/test:free"
+
+
+def test_a_models_list_429_uses_openrouter(tmp_path: Path) -> None:
+    def get(_url: str, _headers: dict) -> _Response:
+        return _Response(429, text="RESOURCE_EXHAUSTED")
+
+    def post(url: str, _headers: dict, payload: dict) -> _Response:
+        assert "generativelanguage.googleapis.com" not in url
+        assert str(payload["model"]).endswith(":free")
+        return _Response(200, {"choices": [{"message": {"content": "pong"}}]})
+
+    result = complete_with_gemini(
+        "SYNTHETIC-ONLY reply with pong",
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={"GEMINI_API_KEY": "secret-key", "OPENROUTER_API_KEY": "or-key"},
+        root=tmp_path,
+        get=get,
+        post=post,
+        sleep=lambda _seconds: None,
+    )
+    assert result.provider == "openrouter"
+    assert result.model == "example/test:free"
+    assert result.text == "pong"
+
+
+def test_a_non_quota_gemini_error_does_not_call_openrouter(tmp_path: Path) -> None:
+    def get(_url: str, _headers: dict) -> _Response:
+        return _Response(200, {"models": [FLASH]})
+
+    def post(url: str, _headers: dict, _payload: dict) -> _Response:
+        if "generativelanguage.googleapis.com" in url:
+            return _Response(503, text="quota")
+        raise AssertionError("openrouter")
+
+    with pytest.raises(RuntimeError, match="Gemini returned 503"):
+        complete_with_gemini(
+            "SYNTHETIC-ONLY reply with pong",
+            cache=_cache(tmp_path),
+            models=["example/test:free"],
+            environ={"GEMINI_API_KEY": "secret-key", "OPENROUTER_API_KEY": "or-key"},
+            root=tmp_path,
+            get=get,
+            post=post,
+            sleep=lambda _seconds: None,
+        )
+
+
 def test_complete_with_gemini_uses_openrouter_after_a_429(tmp_path: Path) -> None:
     def get(_url: str, _headers: dict) -> _Response:
         return _Response(200, {"models": [FLASH]})
