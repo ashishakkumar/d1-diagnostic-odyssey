@@ -21,6 +21,18 @@ export function NoticeFooter() {
       .catch(() => undefined);
   }, []);
   return (
-    <footer className="border-t border-border px-4 py-4 text-sm text-muted-foreground">{text}</footer>
+    <footer className="mt-24 border-t border-border bg-[var(--ed-bg-soft)]">
+      <div className="ed-shell py-8">
+        <p className="font-mono-label">Read this first</p>
+        <p className="mt-2 max-w-[62ch] text-[0.9375rem] leading-relaxed text-[var(--ed-fg-soft)]">{text}</p>
+        <p className="mt-6 text-sm text-muted-foreground">
+          A research prototype by{" "}
+          <a className="underline hover:text-[var(--ed-accent)]" href="https://ashk.in">
+            Ashish Kumar
+          </a>
+          . Synthetic data only. Nothing here has been used with a patient.
+        </p>
+      </div>
+    </footer>
   );
 }

@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 export function NotebookShell({ children }: { children: ReactNode }) {
   return (
     <>
-      <div className="mx-auto min-h-screen max-w-3xl px-4 py-8">{children}</div>
+      <main id="main" className="min-h-[70vh]">
+        {children}
+      </main>
       <NoticeFooter />
     </>
   );

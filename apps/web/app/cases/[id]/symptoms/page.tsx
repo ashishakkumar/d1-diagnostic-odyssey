@@ -48,9 +48,12 @@ export default function SymptomsPage() {
   }
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl">Drafted symptoms</h1>
-      <p>Accept or reject each drafted term. This is a form.</p>
+    <section className="space-y-6">
+<header className="space-y-2">
+        <p className="font-mono-label">Step 2 · Confirm</p>
+        <h1 className="font-display text-3xl italic md:text-4xl">Drafted symptoms</h1>
+        <p className="max-w-[56ch] text-[var(--ed-fg-soft)]">Accept or reject each drafted term. The notebook only compares what you accept. This is a form, not a chat.</p>
+      </header>
       <Button
         type="button"
         variant="secondary"

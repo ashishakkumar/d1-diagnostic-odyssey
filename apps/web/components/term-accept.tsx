@@ -50,8 +50,8 @@ export function SymptomReview({
   return (
     <ul className="space-y-4">
       {drafts.map((term) => (
-        <li key={term.draft_id} className="space-y-2 rounded-md border border-border p-4">
-          <p className="text-lg">{term.plain_words}</p>
+        <li key={term.draft_id} className="ed-paper space-y-2 p-5">
+          <p className="font-display text-xl italic text-[var(--ed-fg)]">{term.plain_words}</p>
           <p>
             Official name: {term.official_name} ({term.hpo_id})
           </p>

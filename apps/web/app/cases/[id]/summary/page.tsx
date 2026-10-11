@@ -10,6 +10,7 @@ export default function SummaryPage() {
   const [text, setText] = useState<string>("");
   const [report, setReport] = useState<ComparisonReport | null>(null);
   const [prior, setPrior] = useState<string | null>(null);
+  const [labels, setLabels] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,16 +32,45 @@ export default function SummaryPage() {
       })
       .then(setReport)
       .catch(() => setError("The notebook cannot reach the API."));
+    fetch(`/api/cases/${params.id}/timeline`)
+      .then(async (response) => {
+        if (!response.ok) {
+          return;
+        }
+        const body = (await response.json()) as {
+          events: Array<{ kind: string; body: { hpo_id?: string; label?: string } }>;
+        };
+        const map: Record<string, string> = {};
+        for (const event of body.events) {
+          if (event.kind === "hpo_term" && event.body.hpo_id && event.body.label) {
+            map[event.body.hpo_id] = event.body.label;
+          }
+        }
+        setLabels(map);
+      })
+      .catch(() => undefined);
   }, [params.id]);
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl">Summary for a doctor</h1>
-      {error ? <p>{error}</p> : null}
-      {report && report.evidence.length > 0 ? <ComparisonPanel report={report} /> : null}
-      <label className="flex items-center gap-2 text-sm">
+    <section className="space-y-8">
+      <header className="space-y-2">
+        <p className="font-mono-label">Step 4 · Hand over</p>
+        <h1 className="font-display text-3xl italic md:text-4xl">Summary for a doctor</h1>
+        <p className="max-w-[56ch] text-[var(--ed-fg-soft)]">
+          What was confirmed, what the public catalogues show about it, and what to ask. Read the comparison first, then
+          the page. Neither is a diagnosis.
+        </p>
+      </header>
+      {error ? (
+        <p role="alert" className="border border-[var(--ed-accent)] p-3 text-[var(--ed-fg)]">
+          {error}
+        </p>
+      ) : null}
+      {report && report.evidence.length > 0 ? <ComparisonPanel report={report} termLabels={labels} /> : null}
+      <label className="flex items-center gap-2 font-[family-name:var(--font-label)] text-sm text-[var(--ed-fg-soft)]">
         <input
           type="checkbox"
+          className="h-4 w-4 accent-[var(--ed-accent)]"
           onChange={async (event) => {
             if (!event.target.checked) {
               setPrior(null);
@@ -71,7 +101,7 @@ export default function SummaryPage() {
         Show the experimental population prior
       </label>
       {prior ? (
-        <p data-testid="population-prior">{prior}</p>
+        <p data-testid="population-prior" className="ed-paper max-w-[70ch] p-4 text-[0.9375rem]">{prior}</p>
       ) : null}
       {text ? (
         <SummaryPreview text={text} pdfHref={`/api/cases/${params.id}/summary.pdf`} />

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div className="relative w-full overflow-x-auto">
-      <table className={cn("w-full text-sm", className)} {...props} />
+      <table className={cn("w-full text-[0.9375rem]", className)} {...props} />
     </div>
   );
 }
@@ -22,7 +22,7 @@ export function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 }
 
 export function TableHead({ className, ...props }: React.ComponentProps<"th">) {
-  return <th className={cn("h-10 px-2 text-left font-medium", className)} {...props} />;
+  return <th className={cn("h-10 px-2 text-left font-[family-name:var(--font-label)] text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground", className)} {...props} />;
 }
 
 export function TableCell({ className, ...props }: React.ComponentProps<"td">) {

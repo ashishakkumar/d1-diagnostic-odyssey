@@ -75,8 +75,12 @@ export default function VariantPage() {
   }
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl">Lab-reported variant</h1>
+    <section className="space-y-6">
+      <header className="space-y-2">
+        <p className="font-mono-label">Step 3 · Copy from a report</p>
+        <h1 className="font-display text-3xl italic md:text-4xl">Lab-reported variant</h1>
+        <p className="max-w-[56ch] text-[var(--ed-fg-soft)]">Type what the lab report says, word for word. It is stored and shown on the doctor page. It does not change the comparison.</p>
+      </header>
       <VariantForm onSubmit={(fields) => void save(fields)} />
       <Button
         type="button"
@@ -95,7 +99,7 @@ export default function VariantPage() {
       </Button>
       {message ? <p>{message}</p> : null}
       {pending ? (
-        <div className="space-y-2 rounded-md border border-border p-4">
+        <div className="ed-paper space-y-2 p-4">
           <p>
             Gene {pending.gene_symbol}. Variant {pending.variant}. Report date {pending.report_date}.
           </p>
