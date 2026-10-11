@@ -6,6 +6,16 @@ export interface ApprovalRequest {
   seen_hash: string;
 }
 
+export interface ConfirmIn {
+  case_id: string;
+  terms: ConfirmTermIn[];
+}
+
+export interface ConfirmTermIn {
+  hpo_id: string;
+  label: string;
+}
+
 export interface DemoCaseOut {
   blurb: string;
   case_id: string;
@@ -24,6 +34,11 @@ export interface DemoLoadedOut {
 
 export interface HTTPValidationError {
   detail?: ValidationError[];
+}
+
+export interface PipelineIn {
+  note?: string | null;
+  slug?: string | null;
 }
 
 export interface PopulationPriorOut {

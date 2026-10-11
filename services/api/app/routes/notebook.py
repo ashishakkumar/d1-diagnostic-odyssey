@@ -13,6 +13,7 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, constr
 
 from app.demo_cases import DEMO_CASES, case_by_slug, load_demo_case
+from app.pipeline import REVIEWER, build_pipeline, questions_for
 from app.routes.ports import (
     country_footer,
     lay_wording,
@@ -66,6 +67,24 @@ class DemoLoadedOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
     slug: str
     case_id: str
+
+
+class PipelineIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    slug: str | None = None
+    note: str | None = None
+
+
+class ConfirmTermIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    hpo_id: constr(pattern=r"^HP:[0-9]{7}$")
+    label: constr(min_length=1, strip_whitespace=True)
+
+
+class ConfirmIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    case_id: UUID
+    terms: list[ConfirmTermIn]
 
 
 class PopulationPriorOut(BaseModel):
@@ -323,6 +342,65 @@ def create_app() -> FastAPI:
         except SafetyError as exc:
             raise HTTPException(status_code=422, detail="the page failed the scan") from exc
         return Response(content=pdf, media_type="application/pdf")
+
+    @app.post("/pipeline")
+    def pipeline(body: PipelineIn) -> dict[str, object]:
+        try:
+            payload = build_pipeline(body.slug, body.note)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="unknown demo case") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        screen = payload.get("stop")
+        if isinstance(screen, dict):
+            raise HTTPException(status_code=409, detail=screen)
+        return payload
+
+    @app.post("/pipeline/confirm")
+    def confirm_pipeline(body: ConfirmIn, request: Request) -> dict[str, object]:
+        if not body.terms:
+            raise HTTPException(status_code=422, detail="nothing left to confirm")
+        reviewer = request.cookies.get(SESSION_COOKIE, "").strip() or REVIEWER
+        recorded: list[str] = []
+        kept: list[dict[str, object]] = []
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute("SET ROLE d1_api")
+            bind_reviewer(connection, reviewer)
+            for term in body.terms:
+                _stopped(term.label)
+                plain, explanation = lay_wording(term.hpo_id, term.label)
+                draft_id = uuid4()
+                draft = HpoTermDraft(
+                    id=draft_id,
+                    case_id=body.case_id,
+                    hpo_id=term.hpo_id,
+                    label=term.label,
+                    presence="present",
+                    explanation=explanation,
+                )
+                stored = draft.model_dump(mode="json", exclude_none=True)
+                row = connection.execute(
+                    """
+                    INSERT INTO app.draft (id, case_id, kind, body)
+                    VALUES (%s, %s, 'hpo_term', %s)
+                    RETURNING body_hash
+                    """,
+                    (draft_id, body.case_id, Jsonb(stored)),
+                ).fetchone()
+                if row is None:
+                    raise HTTPException(status_code=500, detail="draft was not stored")
+                try:
+                    apply_decision(connection, str(draft_id), "approve", row[0])
+                except psycopg.Error as exc:
+                    raise _gate_error(exc) from exc
+                recorded.append(str(draft_id))
+                kept.append({"hpo_id": term.hpo_id, "plain_words": plain, "label": term.label})
+        return {
+            "case_id": str(body.case_id),
+            "reviewer": reviewer,
+            "recorded": recorded,
+            "questions": questions_for(kept),
+        }
 
     @app.post("/cases/{case_id}/approvals")
     def approve(case_id: UUID, body: ApprovalRequest, request: Request) -> dict[str, str]:

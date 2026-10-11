@@ -2,7 +2,7 @@
 
 For research use only. Not for use in diagnostic procedures.
 
-This notebook is a synthetic case file. It does not diagnose. `make demo` resets the local database and opens the five cases at <http://127.0.0.1:3000>.
+This notebook is a synthetic case file. It does not diagnose. `make demo` resets the local database and opens the one-step notebook at <http://127.0.0.1:3000>.
 
 Pull request #9 is the finish PR for the whole app. Its base is `main`. It is not a draft. The head branch is `cursor/finish-odyssey-demo-79af`.
 
@@ -10,17 +10,19 @@ The multi-omics slice is the opt-in allele-frequency prior in `services/api/app/
 
 ## What a person can run
 
-Sign in with any name, then load one of the five synthetic cases. Each load still goes through `app.apply_decision`. The summary shows a cited catalogue comparison, plain-language wording for the terms, and the India footer (emergency number 112, from `templates/red_flags/default.txt`). One case abstains. The lab-variant page has a warning-sign button. That button posts "Unconsciousness." and the API returns 409 with the stop screen. The draft is not saved. A checkbox on the summary turns on an experimental population-frequency prior from `services/api/app/data/allele_frequencies.json` (`NM_000138.5:c.1A>G`, allele frequency 0.00012). The prior does not change the catalogue comparison, and the limits text says this build did not call gnomAD or ClinVar.
+The landing is one step. Pick one of the five synthetic cases, or paste or upload a short synthetic note. There is no sign-in wall and no symptom form. The next screen is one pipeline, labeled Read, Map, Match, and Rank. Each stage says what the software did. Extraction is a fixed lexicon. The page says no language model ran, and that the free-tier quota is closed until 2026-10-12 00:00 UTC. Ranks are Resnik best-match average on the ten-row synthetic table. The page says this is not the 249-disease held-out run. The person then confirms or corrects the chips. That click is the only write on this path. It goes through `app.apply_decision`. With no session cookie the reviewer is `synthetic-reader`. A note that matches a warning sign returns 409 with the stop screen and is not saved. The India footer still shows 112.
 
-`make e2e` runs that path in Chromium and writes `docs/demo-screenshots/01-cases.png` through `07-stop.png`.
+`POST /demo/cases/{slug}/load` still writes the five frequency-bin stories through the same gate. That summary is the frequency-bin card: Separated rows leads with ORPHA:9000001 and a ratio of zero; No separated row abstains with `many_within_factor`; Stable at both ends keeps a finite margin; the variant case does not move that comparison; the opt-in prior still shows 0.00012 from the fixture and says this build did not call gnomAD or ClinVar. The landing ranker does not retell those margins. On the landing, Separated rows and the variant note lead with ORPHA:9000001. A seizure-only note scores zero because that term is on every synthetic row, so the page says not enough signal. The stable pair shares the best Resnik score, so the page abstains there too. The limits note adds the approved sentence that this page does not choose a dose.
 
-| Case | What the page shows |
+`make e2e` runs the landing path in Chromium and writes `docs/demo-screenshots/01-cases.png` through `07-stop.png`.
+
+| Case on the landing | What the page shows |
 | --- | --- |
-| Separated rows | ORPHA:9000001 ahead. The next row has a ratio of zero, so the margin is empty, `margin_reason` is `runner_up_ratio_is_zero`, and `margin_fact` names HP:0000272. |
-| No separated row | The page abstains (`many_within_factor`). Abstaining does not mean the person is well. |
-| Stable at both ends | ORPHA:9000011 stays first. The margin is a finite number. |
-| Variant does not move the comparison | Same catalogue rows as Separated rows, plus a typed FBN1 variant. Opting into the prior shows 0.00012 and does not move the comparison. |
-| No dose on this page | The page says it does not choose a dose. The warning-sign button on the lab-variant page shows the stop screen. |
+| Separated rows | Lexicon chips for long fingers and flat cheeks. ORPHA:9000001 has the highest Resnik score on the synthetic table. |
+| No separated row | Not enough signal. The seizure term is on every synthetic row, so the best score is zero. |
+| Stable at both ends | ORPHA:9000011 and ORPHA:9000012 share the best score, so the page abstains. |
+| Variant does not move the comparison | Same chips as Separated rows. The note names FBN1. Resnik did not use it. |
+| No dose on this page | Same abstention as the stable pair, plus the sentence that this page does not choose a dose. A pasted "Unconsciousness." shows the stop screen. |
 
 ## Scorer
 

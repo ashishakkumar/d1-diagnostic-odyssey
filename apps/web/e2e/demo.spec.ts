@@ -3,54 +3,71 @@ import path from "node:path";
 
 const shots = path.resolve(__dirname, "../../../docs/demo-screenshots");
 
-test("five synthetic cases, the comparison, and the stop screen", async ({ page }) => {
+test("one step, then the software reads a synthetic note", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Your name for this notebook").fill("ashish");
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("button", { name: "Load Separated rows" })).toBeVisible();
+  await expect(page.getByLabel("Your name for this notebook")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Pick a note. The software does the rest." })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Separated rows/ })).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText("112");
   await page.screenshot({ path: path.join(shots, "01-cases.png"), fullPage: true });
 
-  await page.getByRole("button", { name: "Load Separated rows" }).click();
-  await expect(page.getByTestId("comparison")).toContainText("ORPHA:9000001");
-  await expect(page.getByTestId("public-ranker")).toContainText(
-    "beats the degree baseline at k=1 and k=5",
-  );
-  await expect(page.getByTestId("public-ranker")).toContainText("synthetic frequency-bin card");
-  await expect(page.getByText("ratio of zero").first()).toBeVisible();
-  await expect(page.getByText("long for the hand").first()).toBeVisible();
-  await expect(page.getByRole("contentinfo")).toContainText("112");
+  await page.getByRole("link", { name: /Separated rows/ }).click();
+  await expect(page.getByTestId("method")).toContainText("No language model ran");
+  await expect(page.getByTestId("stage-read")).toContainText("Read");
+  await expect(page.getByTestId("stage-map")).toContainText("Map");
+  await expect(page.getByTestId("stage-match")).toContainText("Match");
+  await expect(page.getByTestId("stage-rank")).toContainText("Rank");
+  await expect(page.getByTestId("actor-software").first()).toContainText("Software, not a person.");
+  await expect(page.getByRole("button", { name: "Confirm these terms" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByTestId("note")).toContainText("long fingers");
+  await expect(page.getByTestId("chips")).toContainText("HP:0001166");
+  await expect(page.getByTestId("chips")).toContainText("Quote:");
+  await expect(page.getByTestId("match-grid")).toContainText("ORPHA:9000001");
+  await expect(page.getByTestId("ranks")).toContainText("ORPHA:9000001");
+  await expect(page.getByTestId("questions")).toContainText("Ask a doctor");
+  await expect(page.getByTestId("actor-person")).toContainText("You decide");
   await expect(page.getByText("This is not a diagnosis").first()).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText("112");
+  await page.getByRole("button", { name: "Confirm these terms" }).click();
+  await expect(page.getByTestId("recorded")).toContainText("synthetic-reader");
   await page.screenshot({ path: path.join(shots, "02-separated.png"), fullPage: true });
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Load No separated row" }).click();
-  await expect(page.getByText("did not separate a first row").first()).toBeVisible();
+  await page.goto("/work?slug=abstain");
+  await expect(page.getByTestId("abstain")).toContainText("Not enough signal", { timeout: 15_000 });
   await expect(page.getByText("does not mean you are well").first()).toBeVisible();
-  await expect(page.getByTestId("comparison")).not.toContainText("Margin");
   await page.screenshot({ path: path.join(shots, "03-abstain.png"), fullPage: true });
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Load Stable at both ends" }).click();
-  await expect(page.getByTestId("comparison")).toContainText("ORPHA:9000011");
-  await expect(page.getByText(/Margin /).first()).toBeVisible();
+  await page.goto("/work?slug=stable");
+  await expect(page.getByTestId("abstain")).toContainText("Not enough signal", { timeout: 15_000 });
+  await expect(page.getByTestId("ranks")).toContainText("ORPHA:9000011");
+  await expect(page.getByTestId("ranks")).toContainText("ORPHA:9000012");
   await page.screenshot({ path: path.join(shots, "04-stable.png"), fullPage: true });
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Load Variant does not move the comparison" }).click();
-  await expect(page.getByTestId("comparison")).toContainText("ORPHA:9000001");
-  await page.getByRole("checkbox", { name: "Show the experimental population prior" }).check();
-  await expect(page.getByTestId("population-prior")).toContainText("0.00012");
-  await expect(page.getByTestId("population-prior")).toContainText("did not call gnomAD");
+  await page.goto("/work?slug=variant");
+  await expect(page.getByText("Resnik did not use it").first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("ranks")).toContainText("ORPHA:9000001");
   await page.screenshot({ path: path.join(shots, "05-prior.png"), fullPage: true });
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Load No dose on this page" }).click();
-  await expect(page.getByText("does not choose a dose").first()).toBeVisible();
+  await page.goto("/work?slug=limits");
+  await expect(page.getByText("does not choose a dose").first()).toBeVisible({ timeout: 15_000 });
   await page.screenshot({ path: path.join(shots, "06-limits.png"), fullPage: true });
 
-  await page.getByRole("link", { name: "Lab variant" }).click();
-  await page.getByRole("button", { name: "Try a warning-sign phrase" }).click();
-  await expect(page.getByText("Stop")).toBeVisible();
-  await expect(page.getByText(/Unconsciousness/)).toBeVisible();
+  await page.goto("/");
+  await page.getByLabel("Synthetic note").fill("Unconsciousness.");
+  await page.getByRole("button", { name: "Read this note" }).click();
+  await expect(page.getByTestId("stop")).toContainText("Stop");
+  await expect(page.getByTestId("stop")).toContainText("Unconsciousness");
+  await expect(page.getByTestId("stop")).toContainText("112");
   await page.screenshot({ path: path.join(shots, "07-stop.png"), fullPage: true });
+
+  await page.goto("/");
+  await page.getByLabel("Upload a synthetic note").setInputFiles({
+    name: "note.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Synthetic note. The hands show long fingers."),
+  });
+  await expect(page.getByTestId("chips")).toContainText("HP:0001166", { timeout: 15_000 });
+  await expect(page.getByTestId("method")).toContainText("No language model ran");
 });

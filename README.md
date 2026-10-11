@@ -19,7 +19,7 @@ make demo
 
 `make setup` creates a virtualenv, installs the Python and TypeScript packages, and generates types from `contracts/pipeline.schema.json` and from the FastAPI app.
 
-`make demo` resets the local database and opens the notebook at <http://127.0.0.1:3000>. Sign in with any name, then load one of the five synthetic cases. The page shows a cited catalogue comparison, plain-language term wording, and the country footer. One case abstains. The lab-variant page has a warning-sign button that shows the stop screen and does not save the draft. A checkbox on the summary turns on an experimental population-frequency prior from a checked-in fixture. It does not change the catalogue comparison.
+`make demo` resets the local database and opens the notebook at <http://127.0.0.1:3000>. One step: pick a synthetic case, or paste or upload a short synthetic note. There is no sign-in wall and no symptom form. The next screen runs Read, Map, Match, and Rank. Extraction is a fixed lexicon. No language model ran. The free-tier quota is closed until 2026-10-12 00:00 UTC. Ranks are Resnik best-match average on the ten-row synthetic table, not the 249-disease held-out run. The person confirms or corrects the chips. That click is the only write on this path, and it goes through `app.apply_decision`. A warning-sign note returns 409 and is not saved. The frequency-bin card, with its cited comparison and the opt-in allele-frequency prior, is still the summary after `POST /demo/cases/{slug}/load`. It is not the landing ranker.
 
 ```text
 make db-up

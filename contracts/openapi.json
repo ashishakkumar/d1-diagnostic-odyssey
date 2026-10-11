@@ -32,6 +32,50 @@
         "title": "ApprovalRequest",
         "type": "object"
       },
+      "ConfirmIn": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "terms": {
+            "items": {
+              "$ref": "#/components/schemas/ConfirmTermIn"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "terms"
+        ],
+        "title": "ConfirmIn",
+        "type": "object"
+      },
+      "ConfirmTermIn": {
+        "additionalProperties": false,
+        "properties": {
+          "hpo_id": {
+            "pattern": "^HP:[0-9]{7}$",
+            "title": "Hpo Id",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hpo_id",
+          "label"
+        ],
+        "title": "ConfirmTermIn",
+        "type": "object"
+      },
       "DemoCaseOut": {
         "additionalProperties": false,
         "properties": {
@@ -108,6 +152,35 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "PipelineIn": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "title": "PipelineIn",
         "type": "object"
       },
       "PopulationPriorOut": {
@@ -1072,6 +1145,86 @@
           }
         },
         "summary": "Footer"
+      }
+    },
+    "/pipeline": {
+      "post": {
+        "operationId": "pipeline_pipeline_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PipelineIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Pipeline Pipeline Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pipeline"
+      }
+    },
+    "/pipeline/confirm": {
+      "post": {
+        "operationId": "confirm_pipeline_pipeline_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Confirm Pipeline Pipeline Confirm Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Pipeline"
       }
     },
     "/session": {
