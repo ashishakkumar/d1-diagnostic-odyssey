@@ -1934,7 +1934,22 @@ These rows are method results on public cases. They are not a benefit to a real 
 
 ## Time-split leakage note
 
-Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. Abstentions are misses. The scorer thresholds were not changed for this run.
+Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. Abstentions are misses. The scorer thresholds were not changed for this run. A missing row stays the flat unannotated ratio, 0.01 / 0.05. An ancestor climb to the nearest annotated parent below HP:0000001 and HP:0000118 was measured on this pin and lowered full-set top-1 from 1292/4815 to 841/4815, so this run and the notebook do not climb. The background stays 0.05. The notebook ships this scorer. Term-overlap-loo copies terms from other packets in this release, so it uses the labels the score is judged against. It is not shipped.
+
+## Held-out split
+
+Each packet is train or test from SHA-256 of the packet id, modulo 5. Remainder 0 is test. The split is not used to choose a threshold, a background, or a bin edge. Term-overlap still reads other packets in the scored set, including packets from the other cohort, so its test row is not an independent catalogue.
+
+| degradation | cohort | top1 | top3 | top10 | packets_scored | no_confident |
+| --- | --- | --- | --- | --- | --- | --- |
+| full | train | 1046/3890 | 1292/3890 | 1582/3890 | 3890 | 1310/3890 |
+| full | test | 246/925 | 297/925 | 371/925 | 925 | 343/925 |
+| fewer | train | 659/3890 | 851/3890 | 1125/3890 | 3890 | 1653/3890 |
+| fewer | test | 153/925 | 208/925 | 291/925 | 925 | 370/925 |
+| vaguer | train | 152/3890 | 253/3890 | 462/3890 | 3890 | 1897/3890 |
+| vaguer | test | 49/925 | 71/925 | 119/925 | 925 | 455/925 |
+| patient | train | 72/3890 | 112/3890 | 190/3890 | 3890 | 2199/3890 |
+| patient | test | 23/925 | 25/925 | 40/925 | 925 | 532/925 |
 
 # Public-case method results
 
@@ -2057,6 +2072,21 @@ These rows are method results on public cases. They are not a benefit to a real 
 ## Time-split leakage note
 
 Time-split leakage note. Cutoff 2026-06-23. before=10377 after=0 undated=0. The packet created timestamp is not a publication date. This check is not a pass. A packet dated before the cutoff can still share a paper with the public table. The term-overlap-loo catalogue is other packets in this same store release, with the packet being scored left out. It is not an Orphanet frequency table.
+
+## Held-out split
+
+Each packet is train or test from SHA-256 of the packet id, modulo 5. Remainder 0 is test. The split is not used to choose a threshold, a background, or a bin edge. Term-overlap still reads other packets in the scored set, including packets from the other cohort, so its test row is not an independent catalogue.
+
+| degradation | cohort | top1 | top3 | top10 | packets_scored | no_confident |
+| --- | --- | --- | --- | --- | --- | --- |
+| full | train | 3075/3890 | 3522/3890 | 3719/3890 | 3890 | 85/3890 |
+| full | test | 731/925 | 847/925 | 887/925 | 925 | 19/925 |
+| fewer | train | 2145/3890 | 2865/3890 | 3376/3890 | 3890 | 354/3890 |
+| fewer | test | 514/925 | 707/925 | 827/925 | 925 | 69/925 |
+| vaguer | train | 443/3890 | 617/3890 | 950/3890 | 3890 | 622/3890 |
+| vaguer | test | 97/925 | 136/925 | 219/925 | 925 | 124/925 |
+| patient | train | 319/3890 | 442/3890 | 655/3890 | 3890 | 1093/3890 |
+| patient | test | 73/925 | 101/925 | 153/925 | 925 | 254/925 |
 
 mondo_sha256: 87c3233b06d24a68b555b965934721d521d8e13644a5f56e8a24d5270bba95cd
 hpo_version: v2026-09-01
