@@ -149,6 +149,12 @@ export interface ApprovalRecord {
 export interface Report {
   evidence: TermEvidence[];
   margin: number | null;
+  /**
+   * The next disease ratio is 0, so the margin is not a finite number.
+   */
+  margin_reason?: "runner_up_ratio_is_zero";
+  abstain_reason?: "many_within_factor" | "top_flips_between_bounds" | "tied_for_first" | "no_scoreable_disease";
+  leading_orphanet_id?: string;
   abstained: boolean;
   probability?: number;
   /**

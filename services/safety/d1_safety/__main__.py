@@ -42,6 +42,15 @@ _FIXTURES: dict[str, dict] = {
         "lab_words": "seen in the report",
     },
     "emergency_footer": {},
+    "catalogue_row": {
+        "source": "orphanet-en_product4",
+        "version": "2026-06-23-synthetic",
+        "orphanet_id": "ORPHA:9000001",
+    },
+    "catalogue_margin": {"margin": "11.111"},
+    "catalogue_margin_unbounded": {},
+    "catalogue_abstained": {"abstain_reason": "several rows sit close together"},
+    "no_dose": {},
 }
 
 

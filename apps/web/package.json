@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "lint": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

@@ -1,12 +1,14 @@
 "use client";
 
 import { CaseList } from "@/components/case-list";
+import { DemoList, type DemoCase } from "@/components/demo-list";
 import { SessionForm } from "@/components/session-form";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
 export default function HomePage() {
   const [cases, setCases] = useState<string[]>([]);
+  const [demos, setDemos] = useState<DemoCase[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
 
@@ -19,6 +21,15 @@ export default function HomePage() {
         return (await response.json()) as { cases: string[] };
       })
       .then((body) => setCases(body.cases))
+      .catch(() => setError("down"));
+    fetch("/api/demo/cases")
+      .then(async (response) => {
+        if (!response.ok) {
+          return;
+        }
+        const body = (await response.json()) as { cases: DemoCase[] };
+        setDemos(body.cases);
+      })
       .catch(() => setError("down"));
     fetch("/api/session", { credentials: "include" })
       .then(async (response) => {
@@ -60,6 +71,25 @@ export default function HomePage() {
       >
         Open a synthetic case
       </Button>
+      {name ? (
+        <DemoList
+          cases={demos}
+          onLoad={async (slug) => {
+            const response = await fetch(`/api/demo/cases/${slug}/load`, {
+              method: "POST",
+              credentials: "include",
+            });
+            if (!response.ok) {
+              setError("down");
+              return;
+            }
+            const body = (await response.json()) as { case_id: string };
+            window.location.assign(`/cases/${body.case_id}/summary`);
+          }}
+        />
+      ) : (
+        <p>Sign in to load a synthetic demo case.</p>
+      )}
       <CaseList cases={cases} error={error} />
     </div>
   );

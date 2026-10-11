@@ -3,7 +3,9 @@ export DATABASE_URL
 
 VENV := .venv/bin
 
-.PHONY: setup lint test db-up db-reset generate safety-scan eval-download eval-store ingest-replay
+.PHONY: setup lint test db-up db-reset generate safety-scan eval-download eval-store ingest-replay demo e2e openapi
+
+API_PATH := services/api:contracts/src:services/scoring:services/safety:services/ingest/src:services/llm
 
 setup:
 	python3 -m venv .venv
@@ -30,6 +32,7 @@ generate:
 		--output $(CURDIR)/contracts/ts/src/generated.ts \
 		--unreachableDefinitions \
 		--additionalProperties false
+	PYTHONPATH="$(API_PATH)" $(VENV)/python -m app.export_openapi
 
 db-up:
 	@if command -v docker >/dev/null 2>&1; then \
@@ -75,3 +78,12 @@ INGEST_OUT ?= services/ingest/change-list-size.tsv
 ingest-replay:
 	PYTHONPATH="services/ingest/src:contracts/src" $(VENV)/python -m d1_ingest.replay \
 		--out "$(INGEST_OUT)" $(INGEST_ARCHIVES)
+
+openapi:
+	PYTHONPATH="$(API_PATH)" $(VENV)/python -m app.export_openapi
+
+demo: db-reset
+	PYTHONPATH="$(API_PATH)" $(VENV)/python scripts/demo.py
+
+e2e: db-reset
+	npm --prefix apps/web exec -- playwright test

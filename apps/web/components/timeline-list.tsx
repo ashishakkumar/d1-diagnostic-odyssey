@@ -16,7 +16,12 @@ export type TimelineEvent = {
 function describe(event: TimelineEvent): string {
   const body = event.body;
   if (event.kind === "hpo_term") {
-    return `${String(body.label)} (${String(body.hpo_id)}), marked ${String(body.presence)}.`;
+    const base = `${String(body.label)} (${String(body.hpo_id)}), marked ${String(body.presence)}.`;
+    const explanation = body.explanation;
+    if (typeof explanation === "string" && explanation) {
+      return `${base} ${explanation}`;
+    }
+    return base;
   }
   if (event.kind === "lab_reported_variant") {
     const variation = body.variation as { expressions?: Array<{ value?: string }> } | undefined;

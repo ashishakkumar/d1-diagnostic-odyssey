@@ -4,7 +4,7 @@ Case {{ case_id }}
 
 What was confirmed
 {% for term in terms -%}
-- {{ term.label }} ({{ term.hpo_id }}), marked {{ term.presence }}.
+- {{ term.label }} ({{ term.hpo_id }}), marked {{ term.presence }}. {{ term.explanation }}
 {% else -%}
 - No symptom term has been accepted.
 {% endfor %}

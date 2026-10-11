@@ -5,7 +5,6 @@ from pathlib import Path
 import phenopackets.schema.v2 as pps2
 import pytest
 from google.protobuf.json_format import MessageToDict
-from scoring.catalogue import BACKGROUND, CLOSE_DISEASE_COUNT, CLOSE_FACTOR
 
 from d1_contracts import EvidenceRow
 from scoring import (
@@ -16,6 +15,7 @@ from scoring import (
     suggest_questions,
     to_public,
 )
+from scoring.catalogue import BACKGROUND, CLOSE_DISEASE_COUNT, CLOSE_FACTOR
 
 FIXTURES = Path(__file__).parent / "fixtures"
 # Frozen background is 0.05. Present-term ratio = bin bound / 0.05.
@@ -173,6 +173,42 @@ def test_top_disease_flips_between_bin_bounds() -> None:
     assert report.leading_orphanet_id is None
 
 
+def test_a_child_term_uses_the_annotated_ancestor_bin() -> None:
+    # HP:0002197 is a child of HP:0001250 in the fixture ontology.
+    # Without the parent link the term is unannotated (0.01/0.05 = 0.2).
+    # With the link it uses the obligate bin (1/0.05 = 20).
+    rows = [frequency_row(901, "ORPHA:9000101", "MONDO:8000101", "HP:0001250", "obligate")]
+    plain = catalogue_score([("HP:0002197", "present")], rows)
+    climbed = catalogue_score(
+        [("HP:0002197", "present")],
+        rows,
+        {"HP:0002197": "HP:0001250"},
+    )
+    assert plain.diseases[0].lower_ratio == pytest.approx(0.2)
+    assert climbed.diseases[0].lower_ratio == pytest.approx(20)
+    assert climbed.diseases[0].terms[0].hpo_id == "HP:0002197"
+
+
+def test_the_climb_stops_at_the_ontology_root() -> None:
+    rows = [frequency_row(911, "ORPHA:9000102", "MONDO:8000102", "HP:0000118", "obligate")]
+    climbed = catalogue_score(
+        [("HP:0009998", "present")],
+        rows,
+        {"HP:0009998": "HP:0000118"},
+    )
+    assert climbed.diseases[0].lower_ratio == pytest.approx(0.2)
+
+
+def test_a_zero_runner_up_states_why_the_margin_is_not_a_number() -> None:
+    report = catalogue_score(
+        [("HP:0001166", "present"), ("HP:0000272", "present")],
+        frequency_rows(),
+    )
+    assert report.diseases[1].lower_ratio == pytest.approx(0)
+    assert report.margin is None
+    assert report.margin_reason == "runner_up_ratio_is_zero"
+
+
 def test_a_tie_for_first_is_not_confident() -> None:
     rows = [
         frequency_row(501, "ORPHA:9000031", "MONDO:8000031", "HP:0001166", "obligate"),
@@ -297,7 +333,9 @@ def _scored():
 
 def test_without_a_reliability_curve_the_output_is_evidence_and_margin() -> None:
     public = to_public(_scored(), probability=0.4)
-    assert set(public) == {"evidence", "margin"}
+    assert set(public) == {"evidence", "margin", "margin_reason"}
+    assert public["margin_reason"] == "runner_up_ratio_is_zero"
+    assert public["margin"] is None
     assert "probability" not in json.dumps(public)
     term = public["evidence"]["terms"][0]
     assert term["source"] == "orphanet-en_product4"
@@ -313,7 +351,13 @@ def test_a_probability_appears_only_beside_its_reliability_curve() -> None:
     public = to_public(_scored(), probability=0.4, reliability_curve=curve)
     assert public["probability"] == 0.4
     assert public["reliability_curve"] == curve
-    assert set(public) == {"evidence", "margin", "probability", "reliability_curve"}
+    assert set(public) == {
+        "evidence",
+        "margin",
+        "margin_reason",
+        "probability",
+        "reliability_curve",
+    }
 
 
 def test_a_short_or_out_of_range_curve_does_not_unlock_a_probability() -> None:
@@ -331,8 +375,8 @@ def test_a_short_or_out_of_range_curve_does_not_unlock_a_probability() -> None:
             {"predicted": 0.2, "observed": 0.1},
         ],
     )
-    assert set(one_point) == {"evidence", "margin"}
-    assert set(out_of_range) == {"evidence", "margin"}
+    assert set(one_point) == {"evidence", "margin", "margin_reason"}
+    assert set(out_of_range) == {"evidence", "margin", "margin_reason"}
 
 
 def test_public_questions_drop_nonspecific_terms() -> None:
@@ -466,4 +510,7 @@ def test_an_excluded_phenotypic_feature_stays_excluded() -> None:
 
 
 def test_likelihood_signature_has_no_text_and_no_gene_symbol() -> None:
-    assert set(inspect.signature(catalogue_score).parameters) == {"accepted_hpo", "rows"}
+    names = set(inspect.signature(catalogue_score).parameters)
+    assert "gene" not in names
+    assert "text" not in names
+    assert names == {"accepted_hpo", "rows", "parents"}

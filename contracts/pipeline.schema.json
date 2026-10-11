@@ -213,6 +213,21 @@
           "items": {"$ref": "#/$defs/TermEvidence"}
         },
         "margin": {"type": ["number", "null"]},
+        "margin_reason": {
+          "type": "string",
+          "enum": ["runner_up_ratio_is_zero"],
+          "description": "The next disease ratio is 0, so the margin is not a finite number."
+        },
+        "abstain_reason": {
+          "type": "string",
+          "enum": [
+            "many_within_factor",
+            "top_flips_between_bounds",
+            "tied_for_first",
+            "no_scoreable_disease"
+          ]
+        },
+        "leading_orphanet_id": {"type": "string", "minLength": 1},
         "abstained": {"type": "boolean"},
         "probability": {"type": "number", "minimum": 0, "maximum": 1},
         "reliability_curve": {

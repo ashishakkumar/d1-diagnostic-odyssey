@@ -9,5 +9,8 @@ dist/
 .next/
 *.tsbuildinfo
 .env
+.env.*
 .coverage
 data/
+uploads/
+*.key

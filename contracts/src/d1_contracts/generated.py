@@ -160,6 +160,20 @@ class Report(BaseModel):
     )
     evidence: list[TermEvidence]
     margin: float | None
+    margin_reason: Literal["runner_up_ratio_is_zero"] | None = Field(
+        None,
+        description="The next disease ratio is 0, so the margin is not a finite number.",
+    )
+    abstain_reason: (
+        Literal[
+            "many_within_factor",
+            "top_flips_between_bounds",
+            "tied_for_first",
+            "no_scoreable_disease",
+        ]
+        | None
+    ) = None
+    leading_orphanet_id: constr(min_length=1) | None = None
     abstained: bool
     probability: confloat(ge=0.0, le=1.0) | None = None
     reliability_curve: list[ReliabilityPoint] | None = Field(None, min_length=2)

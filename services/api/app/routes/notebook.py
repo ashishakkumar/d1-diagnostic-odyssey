@@ -12,10 +12,18 @@ from google.protobuf.json_format import ParseDict, ParseError
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, constr
 
-from app.routes.ports import country_footer, lay_wording, red_flag, report_for, scan_notebook_text
+from app.demo_cases import DEMO_CASES, case_by_slug, load_demo_case
+from app.routes.ports import (
+    country_footer,
+    lay_wording,
+    prior_for,
+    red_flag,
+    report_for,
+    scan_notebook_text,
+)
 from app.routes.summary import accepted_rows, pdf_text, summary_text, text_to_pdf
 from app.session import apply_decision, bind_reviewer
-from d1_contracts import ApprovalRequest, HpoTermDraft, LabReportedVariant
+from d1_contracts import ApprovalRequest, HpoTermDraft, LabReportedVariant, Report
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://d1:d1@127.0.0.1:5432/d1")
 SESSION_COOKIE = "d1_session"
@@ -39,6 +47,40 @@ class TermDraftBody(BaseModel):
     hpo_id: constr(pattern=r"^HP:[0-9]{7}$")
     label: constr(min_length=1, strip_whitespace=True)
     presence: constr(pattern=r"^(present|excluded|uncertain)$")
+
+
+class DemoCaseOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    slug: str
+    case_id: str
+    title: str
+    blurb: str
+
+
+class DemoListOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    cases: list[DemoCaseOut]
+
+
+class DemoLoadedOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    slug: str
+    case_id: str
+
+
+class PopulationPriorOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    experimental: bool
+    track: str
+    opted_in: bool
+    found: bool
+    label: str
+    limits: str
+    source: str | None = None
+    version: str | None = None
+    population: str | None = None
+    variant: str | None = None
+    allele_frequency: float | None = None
 
 
 def _variation(gene_symbol: str, variant: str) -> dict[str, object]:
@@ -91,7 +133,11 @@ def _gate_error(exc: psycopg.Error) -> HTTPException:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI()
+    app = FastAPI(
+        title="D1 notebook",
+        version="0.0.1",
+        description="For research use only. Not for use in diagnostic procedures.",
+    )
 
     @app.post("/session")
     def open_session(body: SessionBody, response: Response) -> dict[str, str]:
@@ -105,7 +151,34 @@ def create_app() -> FastAPI:
     def footer() -> dict[str, str]:
         return {"text": country_footer()}
 
-    @app.get("/cases/{case_id}/report")
+    @app.get("/demo/cases", response_model=DemoListOut)
+    def demo_cases() -> DemoListOut:
+        return DemoListOut(
+            cases=[
+                DemoCaseOut(
+                    slug=str(case["slug"]),
+                    case_id=str(case["case_id"]),
+                    title=str(case["title"]),
+                    blurb=str(case["blurb"]),
+                )
+                for case in DEMO_CASES
+            ]
+        )
+
+    @app.post("/demo/cases/{slug}/load", response_model=DemoLoadedOut)
+    def load_demo(slug: str, request: Request) -> DemoLoadedOut:
+        if case_by_slug(slug) is None:
+            raise HTTPException(status_code=404, detail="unknown demo case")
+        reviewer = _reviewer(request)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute("SET ROLE d1_api")
+            try:
+                case_id = load_demo_case(connection, slug, reviewer)
+            except psycopg.Error as exc:
+                raise _gate_error(exc) from exc
+        return DemoLoadedOut(slug=slug, case_id=case_id)
+
+    @app.get("/cases/{case_id}/report", response_model=Report)
     def case_report(case_id: UUID) -> dict:
         accepted = [
             (str(body["hpo_id"]), str(body["presence"]))
@@ -113,6 +186,17 @@ def create_app() -> FastAPI:
             if kind == "hpo_term" and body.get("hpo_id") and body.get("presence")
         ]
         return report_for(accepted)
+
+    @app.get("/cases/{case_id}/population-prior", response_model=PopulationPriorOut)
+    def population_prior(case_id: UUID, opt_in: bool = False) -> PopulationPriorOut:
+        variant = ""
+        for _at, kind, body in accepted_rows(case_id):
+            if kind != "lab_reported_variant":
+                continue
+            expressions = (body.get("variation") or {}).get("expressions") or []
+            if expressions:
+                variant = str(expressions[0].get("value") or "")
+        return PopulationPriorOut.model_validate(prior_for(variant, opted_in=opt_in))
 
     @app.post("/cases/{case_id}/term-drafts")
     def create_term_draft(case_id: UUID, body: TermDraftBody) -> dict[str, str]:

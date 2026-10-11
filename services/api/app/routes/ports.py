@@ -10,16 +10,30 @@ from d1_safety.redflag import footer_text, stop_screen
 from d1_safety.render import SafetyError, render
 from d1_safety.scan import scan
 
+from app.demo_cases import demo_frequency_rows
 from d1_contracts import LabReportedVariant, parse_report
 from scoring import catalogue_score, to_public
+from scoring.allele import population_prior
 
 ROOT = Path(__file__).resolve().parents[4]
 
 # ponytail: two pinned lay sentences. Upgrade: an HPO lay-synonym file.
 _LAY = {
+    "HP:0001166": (
+        "long fingers",
+        "Fingers that are long for the hand.",
+    ),
+    "HP:0000272": (
+        "flat cheeks",
+        "Cheeks that look flatter than usual.",
+    ),
     "HP:0001250": (
         "seizures",
         "A burst of brain activity that changes movement, awareness, or sensation.",
+    ),
+    "HP:0001251": (
+        "unsteady movement",
+        "Movement that is hard to keep steady.",
     ),
     "HP:0001252": (
         "low muscle tone",
@@ -49,7 +63,18 @@ def scan_notebook_text(
 
 def frequency_rows() -> list[dict]:
     raw = os.environ.get("D1_FREQUENCY_ROWS", "")
-    path = Path(raw) if raw else ROOT / "tests" / "scoring" / "fixtures" / "frequencies.json"
+    if raw:
+        path = Path(raw)
+        if not path.is_file():
+            return []
+        return json.loads(path.read_text())
+    return demo_frequency_rows()
+
+
+def allele_rows() -> list[dict]:
+    raw = os.environ.get("D1_ALLELE_ROWS", "")
+    default = Path(__file__).resolve().parents[1] / "data" / "allele_frequencies.json"
+    path = Path(raw) if raw else default
     if not path.is_file():
         return []
     return json.loads(path.read_text())
@@ -74,6 +99,12 @@ def report_for(accepted: list[tuple[str, str]]) -> dict:
         "margin": public["margin"],
         "abstained": not public["evidence"]["confident"],
     }
+    if public["evidence"].get("abstain_reason"):
+        body["abstain_reason"] = public["evidence"]["abstain_reason"]
+    if public["evidence"].get("leading_orphanet_id"):
+        body["leading_orphanet_id"] = public["evidence"]["leading_orphanet_id"]
+    if public.get("margin_reason"):
+        body["margin_reason"] = public["margin_reason"]
     if "probability" in public:
         body["probability"] = public["probability"]
         body["reliability_curve"] = public["reliability_curve"]
@@ -112,6 +143,15 @@ def change_events(variants: list[LabReportedVariant]) -> list:
 
 def render_sentence(template_id: str, row: dict) -> tuple[str, list[tuple[int, int, str]]]:
     return render(template_id, row)
+
+
+def prior_for(variant: str, *, opted_in: bool) -> dict:
+    body = population_prior(variant, allele_rows(), opted_in=opted_in)
+    text = " ".join(str(body[key]) for key in ("label", "limits") if body.get(key))
+    rules = scan(text)
+    if rules:
+        raise SafetyError(rules)
+    return body
 
 
 def country_footer() -> str:

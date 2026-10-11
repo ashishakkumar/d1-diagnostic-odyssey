@@ -1,6 +1,7 @@
 "use client";
 
 import { DecisionButtons } from "@/components/term-accept";
+import { Button } from "@/components/ui/button";
 import { VariantForm, type VariantFields } from "@/components/variant-form";
 import type { ApprovalRequest } from "@/src/index";
 import { useParams } from "next/navigation";
@@ -63,6 +64,20 @@ export default function VariantPage() {
     <section className="space-y-4">
       <h1 className="text-2xl">Lab-reported variant</h1>
       <VariantForm onSubmit={(fields) => void save(fields)} />
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() =>
+          void save({
+            gene_symbol: "FBN1",
+            variant: "NM_000138.5:c.1A>G",
+            lab_words: "Unconsciousness.",
+            report_date: "2024-03-01",
+          })
+        }
+      >
+        Try a warning-sign phrase
+      </Button>
       {message ? <p>{message}</p> : null}
       {pending ? (
         <div className="space-y-2 rounded-md border border-border p-4">

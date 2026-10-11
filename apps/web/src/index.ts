@@ -1,3 +1,4 @@
+export type { DemoCaseOut, PopulationPriorOut, Report as ApiReport } from "../../../contracts/ts/src/api.ts";
 export type {
   AcceptedTerm,
   ApprovalRecord,

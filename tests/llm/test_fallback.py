@@ -1,0 +1,219 @@
+"""Gemini first. OpenRouter free models only after a 429. No live network."""
+
+from pathlib import Path
+
+import pytest
+
+from d4_llm import (
+    Completion,
+    RateLimitedNoFallback,
+    ReplayCache,
+    SyntheticRejected,
+    complete,
+    complete_or_degrade,
+)
+
+ROOT = Path(__file__).resolve().parents[2]
+PROMPT = "SYNTHETIC-ONLY reply with pong"
+
+
+class Quota(RuntimeError):
+    def __str__(self) -> str:
+        return "429 RESOURCE_EXHAUSTED quota"
+
+
+class _Response:
+    def __init__(self, status: int, payload: dict | None = None) -> None:
+        self.status_code = status
+        self._payload = payload or {}
+
+    def json(self) -> dict:
+        return self._payload
+
+
+def _cache(tmp_path: Path) -> ReplayCache:
+    return ReplayCache(tmp_path / "replay.json")
+
+
+def test_gemini_success_does_not_call_openrouter(tmp_path: Path) -> None:
+    calls = {"primary": 0, "post": 0}
+
+    def primary(_prompt: str) -> str:
+        calls["primary"] += 1
+        return "pong"
+
+    def post(*_args: object) -> _Response:
+        calls["post"] += 1
+        raise AssertionError("openrouter")
+
+    result = complete(
+        PROMPT,
+        primary=primary,
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        post=post,
+    )
+    assert result == Completion(text="pong", provider="gemini", model=None)
+    assert calls == {"primary": 1, "post": 0}
+
+
+def test_a_429_uses_openrouter_and_records_the_provider(tmp_path: Path) -> None:
+    calls = {"primary": 0, "post": 0}
+
+    def primary(_prompt: str) -> str:
+        calls["primary"] += 1
+        raise Quota()
+
+    def post(_url: str, _headers: dict, payload: dict) -> _Response:
+        calls["post"] += 1
+        assert str(payload["model"]).endswith(":free")
+        return _Response(200, {"choices": [{"message": {"content": "pong"}}]})
+
+    result = complete(
+        PROMPT,
+        primary=primary,
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={"OPENROUTER_API_KEY": "test-key"},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        post=post,
+    )
+    assert result.provider == "openrouter"
+    assert result.model == "example/test:free"
+    assert result.text == "pong"
+    assert calls["primary"] == 3
+    assert calls["post"] == 1
+
+
+def test_a_non_rate_limit_error_is_raised_and_openrouter_is_not_called(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        raise RuntimeError("schema mismatch")
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("openrouter")
+
+    with pytest.raises(RuntimeError, match="schema mismatch"):
+        complete(
+            PROMPT,
+            primary=primary,
+            cache=_cache(tmp_path),
+            models=["example/test:free"],
+            environ={"OPENROUTER_API_KEY": "test-key"},
+            root=tmp_path,
+            sleep=lambda _seconds: None,
+            post=post,
+        )
+
+
+def test_a_429_without_a_key_degrades_to_the_gazetteer(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        raise Quota()
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("openrouter")
+
+    with pytest.raises(RateLimitedNoFallback):
+        complete(
+            PROMPT,
+            primary=primary,
+            cache=_cache(tmp_path),
+            models=["example/test:free"],
+            environ={},
+            root=tmp_path,
+            sleep=lambda _seconds: None,
+            post=post,
+        )
+    degraded = complete_or_degrade(
+        PROMPT,
+        primary=primary,
+        cache=_cache(tmp_path),
+        models=["example/test:free"],
+        environ={},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+        post=post,
+    )
+    assert degraded.provider == "gazetteer"
+    assert "pinned wording" in degraded.text
+
+
+def test_a_model_id_without_the_free_suffix_is_rejected(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        raise AssertionError("primary")
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("openrouter")
+
+    with pytest.raises(ValueError, match=":free"):
+        complete(
+            PROMPT,
+            primary=primary,
+            cache=_cache(tmp_path),
+            models=["example/paid"],
+            environ={"OPENROUTER_API_KEY": "test-key"},
+            root=tmp_path,
+            sleep=lambda _seconds: None,
+            post=post,
+        )
+
+
+def test_non_synthetic_text_is_blocked_before_either_provider(tmp_path: Path) -> None:
+    def primary(_prompt: str) -> str:
+        raise AssertionError("primary")
+
+    def post(*_args: object) -> _Response:
+        raise AssertionError("openrouter")
+
+    with pytest.raises(SyntheticRejected):
+        complete(
+            "a real chart",
+            primary=primary,
+            cache=_cache(tmp_path),
+            models=["example/test:free"],
+            environ={"OPENROUTER_API_KEY": "test-key"},
+            root=tmp_path,
+            sleep=lambda _seconds: None,
+            post=post,
+        )
+
+
+def test_a_cached_answer_is_not_requested_again(tmp_path: Path) -> None:
+    calls = {"primary": 0}
+
+    def primary(_prompt: str) -> str:
+        calls["primary"] += 1
+        return "pong"
+
+    cache = _cache(tmp_path)
+    first = complete(
+        PROMPT,
+        primary=primary,
+        cache=cache,
+        models=["example/test:free"],
+        environ={},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+    )
+    second = complete(
+        PROMPT,
+        primary=primary,
+        cache=cache,
+        models=["example/test:free"],
+        environ={},
+        root=tmp_path,
+        sleep=lambda _seconds: None,
+    )
+    assert first.text == second.text == "pong"
+    assert second.cached is True
+    assert calls["primary"] == 1
+
+
+def test_the_notebook_routes_do_not_call_a_model() -> None:
+    text = (ROOT / "services" / "api" / "app" / "routes" / "notebook.py").read_text().casefold()
+    assert "d4_llm" not in text
+    assert "openrouter" not in text
+    assert "gemini" not in text

@@ -14,16 +14,30 @@ Real records stay on the person's own computer. A hosted database is for synthet
 
 ```text
 make setup
+make demo
+```
+
+`make setup` creates a virtualenv, installs the Python and TypeScript packages, and generates types from `contracts/pipeline.schema.json` and from the FastAPI app.
+
+`make demo` resets the local database and opens the notebook at <http://127.0.0.1:3000>. Sign in with any name, then load one of the five synthetic cases. The page shows a cited catalogue comparison, plain-language term wording, and the country footer. One case abstains. The lab-variant page has a warning-sign button that shows the stop screen and does not save the draft. A checkbox on the summary turns on an experimental population-frequency prior from a checked-in fixture. It does not change the catalogue comparison.
+
+```text
 make db-up
 make db-reset
 make lint
 make safety-scan
 make test
+make e2e
 make eval-store
 make ingest-replay
+make openapi
 ```
 
-`make setup` creates a virtualenv, installs the Python and TypeScript packages, and generates types from `contracts/pipeline.schema.json`.
+`make e2e` runs the same path in a browser and writes screenshots under `docs/demo-screenshots/`.
+
+`make openapi` rewrites `contracts/openapi.json` and `contracts/ts/src/api.ts` from the running app's routes. `make test` fails if those files drift.
+
+A hosted model is not on the notebook path. `services/llm` calls Gemini first, and an OpenRouter model whose id ends in `:free` only after a rate limit. The Gemini id is the newest flash-lite model returned by `GET https://generativelanguage.googleapis.com/v1beta/models`, not a name written into the client. Set `GEMINI_API_KEY` or `GOOGLE_API_KEY` for the primary, and `OPENROUTER_API_KEY` (or a gitignored `uploads/openrouter.key`) for the fallback. With no fallback key, a rate limit degrades to pinned wording. Only text marked `SYNTHETIC-ONLY` may be sent. Nine fictional open-band notes are segmented through that client. The replies are in `services/llm/fixtures/open_band_replay.json`. Eight notes produced an allow-listed span and were scored. The ninth reply was an empty span list, so that packet stays unscored. A later run reads the cache and does not call the model again. `D4_LLM_LIVE=1` runs one live smoke test; the other tests use stubs.
 
 `make safety-scan` checks the fixed sentences and the country footers.
 

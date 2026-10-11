@@ -265,6 +265,22 @@ def test_time_split_counts_packet_dates_only() -> None:
     assert "not a pass" in note
 
 
+def test_held_out_split_uses_the_packet_id_and_prints_both_cohorts() -> None:
+    from d1_eval.harness import cohort_split, held_out_lines
+
+    assert cohort_split("synthetic-alpha") == cohort_split("synthetic-alpha")
+    assert cohort_split("synthetic-alpha") in {"train", "test"}
+    labels = {cohort_split(f"packet-{i}") for i in range(40)}
+    assert labels == {"train", "test"}
+    loaded = load_cases(PACKETS)
+    result = _run(loaded.cases, TermOverlapScorer(load_catalogue(FIXTURES / "catalogue.json")))
+    text = "\n".join(held_out_lines([("full", result)]))
+    assert "Held-out split" in text
+    assert "| train |" in text or "| full | train |" in text
+    assert "test" in text
+    assert "threshold" in text
+
+
 def test_results_table_records_tool_and_data_versions() -> None:
     loaded = load_cases(PACKETS)
     pins = load_pins()

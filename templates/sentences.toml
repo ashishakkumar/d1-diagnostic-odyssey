@@ -28,3 +28,18 @@ lab_words = "lab"
 
 [emergency_footer]
 text = """This page is not for an emergency. For research use only. Not for use in diagnostic procedures. This is not a diagnosis."""
+
+[catalogue_row]
+text = """Catalogue comparison. Source {source} {version}. First row {orphanet_id}. This is not a diagnosis."""
+
+[catalogue_margin]
+text = """The margin between the first row and the next row is {margin}. This is not a diagnosis."""
+
+[catalogue_margin_unbounded]
+text = """The next row has a ratio of zero. The margin is not a finite number. This is not a diagnosis."""
+
+[catalogue_abstained]
+text = """Catalogue comparison did not separate a first row. {abstain_reason} This does not mean you are well. This is not a diagnosis."""
+
+[no_dose]
+text = """This page does not choose a dose or a substitute. This is not a diagnosis."""

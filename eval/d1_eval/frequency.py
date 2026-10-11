@@ -70,12 +70,22 @@ def frequency_table(
 class FrequencyBinScorer:
     """Phenotype-only ranks. An abstention is an empty list, which the harness counts as a miss."""
 
-    def __init__(self, rows: Sequence[Mapping], orpha_to_disease: Mapping[str, str]) -> None:
+    def __init__(
+        self,
+        rows: Sequence[Mapping],
+        orpha_to_disease: Mapping[str, str],
+        parents: Mapping[str, str] | None = None,
+    ) -> None:
         self._rows = list(rows)
         self._orpha_to_disease = dict(orpha_to_disease)
+        self._parents = dict(parents or {})
 
     def score(self, hpo_ids: Sequence[str]) -> list[DiseaseScore]:
-        report = catalogue_score([(hpo_id, "present") for hpo_id in hpo_ids], self._rows)
+        report = catalogue_score(
+            [(hpo_id, "present") for hpo_id in hpo_ids],
+            self._rows,
+            self._parents,
+        )
         public = to_public(report)
         if not public["evidence"]["confident"]:
             return []

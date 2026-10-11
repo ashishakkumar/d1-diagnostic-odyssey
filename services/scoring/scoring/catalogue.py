@@ -13,9 +13,16 @@ from pydantic import BaseModel, ConfigDict
 from d1_contracts import EvidenceRow
 
 # ponytail: one background for every term, and 0.01 when a disease has no row.
-# Upgrade path is the fraction of unique-map diseases that list the term.
+# A per-term background (the fraction of diseases that list the term) punishes a
+# disease whose file simply omits a common term. That is the usual Orphanet gap,
+# so this stays flat. Upgrade: an information-content parent cutoff, measured on
+# a split that was not used to pick the cutoff.
 BACKGROUND = 0.05
 UNANNOTATED = 0.01
+# Climb stops at the ontology roots. Seizure and intellectual disability stay
+# usable annotations; they are only blocked as suggested questions.
+_STOP_CLIMB = frozenset({"HP:0000001", "HP:0000118"})
+_CLIMB_DEPTH = 8
 # Frozen before any store run. Refitting these fails the evaluation.
 CLOSE_DISEASE_COUNT = 10
 CLOSE_FACTOR = 2.0
@@ -94,6 +101,7 @@ class ScoreReport(BaseModel):
     )
     leading_orphanet_id: str | None
     margin: float | None
+    margin_reason: Literal["runner_up_ratio_is_zero"] | None
     excluded_disease_count: int
 
 
@@ -222,6 +230,8 @@ def to_public(
         },
         "margin": report.margin,
     }
+    if report.margin_reason is not None:
+        payload["margin_reason"] = report.margin_reason
     if probability is not None and _curve_ok(reliability_curve):
         payload["probability"] = probability
         payload["reliability_curve"] = [dict(point) for point in reliability_curve or []]
@@ -295,9 +305,34 @@ def suggest_questions(
     return sorted(found)
 
 
+def _annotated_row(
+    by_hpo: Mapping[str, Mapping],
+    hpo_id: str,
+    parents: Mapping[str, str] | None,
+) -> Mapping | None:
+    """Exact frequency row, or the nearest annotated ancestor below the roots."""
+    current = hpo_id
+    seen: set[str] = set()
+    for _depth in range(_CLIMB_DEPTH):
+        if current in seen:
+            return None
+        seen.add(current)
+        row = by_hpo.get(current)
+        if row is not None:
+            return row
+        if not parents:
+            return None
+        parent = parents.get(current)
+        if not parent or parent in _STOP_CLIMB:
+            return None
+        current = parent
+    return None
+
+
 def catalogue_score(
     accepted_hpo: Sequence[tuple[str, Presence]],
     rows: Sequence[Mapping],
+    parents: Mapping[str, str] | None = None,
 ) -> ScoreReport:
     grouped, scoreable, excluded = _partition(rows)
 
@@ -309,7 +344,7 @@ def catalogue_score(
         lower = 1.0
         upper = 1.0
         for hpo_id, presence in accepted_hpo:
-            row = by_hpo.get(hpo_id)
+            row = _annotated_row(by_hpo, hpo_id, parents)
             if row is None:
                 lower_ratio = _ratio(presence, UNANNOTATED)
                 upper_ratio = _ratio(presence, UNANNOTATED)
@@ -347,12 +382,14 @@ def catalogue_score(
         )
     diseases.sort(key=lambda disease: (-disease.lower_ratio, disease.orphanet_id))
     leading, reason = _separate(diseases)
+    margin, margin_reason = _margin(diseases)
     return ScoreReport(
         diseases=diseases,
         confident=reason is None,
         abstain_reason=reason,
         leading_orphanet_id=leading,
-        margin=_margin(diseases),
+        margin=margin,
+        margin_reason=margin_reason,
         excluded_disease_count=excluded,
     )
 
@@ -387,7 +424,9 @@ def _separate(diseases: list[DiseaseScore]) -> tuple[str | None, str | None]:
     return lower_leader, None
 
 
-def _margin(diseases: list[DiseaseScore]) -> float | None:
-    if len(diseases) < 2 or diseases[1].lower_ratio == 0:
-        return None
-    return diseases[0].lower_ratio / diseases[1].lower_ratio
+def _margin(diseases: list[DiseaseScore]) -> tuple[float | None, str | None]:
+    if len(diseases) < 2:
+        return None, None
+    if diseases[1].lower_ratio == 0:
+        return None, "runner_up_ratio_is_zero"
+    return diseases[0].lower_ratio / diseases[1].lower_ratio, None

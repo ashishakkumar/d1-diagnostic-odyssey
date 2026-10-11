@@ -543,7 +543,52 @@ def results_document(
             lines.append(f"| {item.score} | {item.n} | {item.hits} | {item.hit_rate:.3f} |")
         lines.append("")
     lines.extend(["## Time-split leakage note", "", note, ""])
+    lines.extend(held_out_lines(rows))
     return "\n".join(lines)
+
+
+def cohort_split(packet_id: str) -> Literal["train", "test"]:
+    """About one fifth of packet ids are test. The cut is the id hash, not the label."""
+    bucket = int(hashlib.sha256(packet_id.encode()).hexdigest()[:8], 16) % 5
+    if bucket == 0:
+        return "test"
+    return "train"
+
+
+def held_out_lines(rows: Sequence[tuple[str, RunResult]]) -> list[str]:
+    lines = [
+        "## Held-out split",
+        "",
+        "Each packet is train or test from SHA-256 of the packet id, modulo 5. "
+        "Remainder 0 is test. The split is not used to choose a threshold, a background, "
+        "or a bin edge. Term-overlap still reads other packets in the scored set, "
+        "including packets from the other cohort, so its test row is not an independent catalogue.",
+        "",
+        "| degradation | cohort | top1 | top3 | top10 | packets_scored | no_confident |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for level, result in rows:
+        for cohort in ("train", "test"):
+            subset = [row for row in result.cases if cohort_split(row.packet_id) == cohort]
+            part = summarize(subset, result.excluded_diseases, (1, 3, 10))
+            scored = part.packets_scored
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        level,
+                        cohort,
+                        _ratio(part.hits.get(1, 0), scored),
+                        _ratio(part.hits.get(3, 0), scored),
+                        _ratio(part.hits.get(10, 0), scored),
+                        str(scored),
+                        _ratio(part.no_confident, scored),
+                    ]
+                )
+                + " |"
+            )
+    lines.append("")
+    return lines
 
 
 def check_store_file(path: Path, pins: Pins) -> None:

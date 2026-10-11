@@ -193,7 +193,11 @@ def _frequency_rows(
 ) -> tuple[str, str]:
     note = (
         "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
-        "Abstentions are misses. The scorer thresholds were not changed for this run."
+        "Abstentions are misses. The scorer thresholds were not changed for this run. "
+        "A present term with no exact row uses the nearest annotated ancestor below "
+        "HP:0000001 and HP:0000118. The background stays 0.05. "
+        "The notebook ships this scorer. Term-overlap-loo copies terms from other packets "
+        "in this release, so it uses the labels the score is judged against. It is not shipped."
     )
     if not xml_path.is_file():
         reason = (
@@ -203,7 +207,8 @@ def _frequency_rows(
     try:
         kept = {disease: mapping[disease] for disease in unique}
         freq_rows, orpha_to_disease = frequency_table(xml_path, kept)
-        scorer = FrequencyBinScorer(freq_rows, orpha_to_disease)
+        parent_ids = {hpo_id: pair[0] for hpo_id, pair in parents.items()}
+        scorer = FrequencyBinScorer(freq_rows, orpha_to_disease, parent_ids)
         ranked_rows = []
         for level in LEVELS:
             print(f"frequency level={level}", flush=True)

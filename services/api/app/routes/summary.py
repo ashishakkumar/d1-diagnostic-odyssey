@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Literal, Never
 from uuid import UUID
 
 import psycopg
@@ -52,7 +53,7 @@ def _parts(case_id: UUID) -> tuple[list[dict], list[dict]]:
     variants: list[dict] = []
     for _decided_at, kind, body in accepted_rows(case_id):
         if kind == "hpo_term":
-            terms.append(body)
+            terms.append({**body, "explanation": str(body.get("explanation") or "")})
         elif kind == "lab_reported_variant":
             expressions = (body.get("variation") or {}).get("expressions") or []
             variant = expressions[0].get("value", "") if expressions else ""
@@ -70,6 +71,62 @@ def _append(
     pieces.append(sentence)
     for start, end, speaker in quotes:
         spans.append((offset + start, offset + end, speaker))
+
+
+def _abstain_phrase(
+    reason: Literal[
+        "many_within_factor",
+        "top_flips_between_bounds",
+        "tied_for_first",
+        "no_scoreable_disease",
+    ],
+) -> str:
+    if reason == "many_within_factor":
+        return "Several rows sit close together."
+    if reason == "top_flips_between_bounds":
+        return "The first row changes between the two ends of a bin."
+    if reason == "tied_for_first":
+        return "Two rows share the first place."
+    if reason == "no_scoreable_disease":
+        return "No row in the table could be compared."
+    unknown: Never = reason
+    raise ValueError(unknown)
+
+
+def _append_comparison(
+    pieces: list[str],
+    spans: list[tuple[int, int, str]],
+    report: dict,
+) -> None:
+    evidence = report.get("evidence") or []
+    if not evidence:
+        return
+    first = evidence[0]
+    if report.get("abstained"):
+        reason = report.get("abstain_reason") or "no_scoreable_disease"
+        sentence, quotes = render_sentence(
+            "catalogue_abstained",
+            {"abstain_reason": _abstain_phrase(reason)},
+        )
+        _append(pieces, spans, sentence, quotes)
+        return
+    sentence, quotes = render_sentence(
+        "catalogue_row",
+        {
+            "source": str(first.get("source") or "frequency table"),
+            "version": str(first.get("version") or "unversioned"),
+            "orphanet_id": str(report.get("leading_orphanet_id") or first.get("orphanet_id")),
+        },
+    )
+    _append(pieces, spans, sentence, quotes)
+    if report.get("margin_reason") == "runner_up_ratio_is_zero":
+        sentence, quotes = render_sentence("catalogue_margin_unbounded", {})
+        _append(pieces, spans, sentence, quotes)
+        return
+    margin = report.get("margin")
+    if isinstance(margin, (int, float)) and not isinstance(margin, bool):
+        sentence, quotes = render_sentence("catalogue_margin", {"margin": f"{float(margin):.3f}"})
+        _append(pieces, spans, sentence, quotes)
 
 
 def summary_text(case_id: UUID) -> str:
@@ -140,10 +197,14 @@ def summary_text(case_id: UUID) -> str:
         for term in terms
         if term.get("presence") in ("present", "excluded")
     ]
-    if report_for(accepted)["abstained"]:
+    report = report_for(accepted)
+    _append_comparison(pieces, spans, report)
+    if report["abstained"]:
         present = sum(1 for term in terms if term.get("presence") == "present")
         sentence, quotes = render_sentence("not_confident_yet", {"confirmed_count": present})
         _append(pieces, spans, sentence, quotes)
+    sentence, quotes = render_sentence("no_dose", {})
+    _append(pieces, spans, sentence, quotes)
     _append(pieces, spans, country_footer(), [])
     return scan_notebook_text("\n".join(pieces), spans)
 
