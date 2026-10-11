@@ -283,6 +283,19 @@
             ],
             "title": "Margin"
           },
+          "margin_fact": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the margin is not a finite number.",
+            "title": "Margin Fact"
+          },
           "margin_reason": {
             "anyOf": [
               {
@@ -379,6 +392,17 @@
         "additionalProperties": false,
         "description": "One accepted term against one cited frequency row.",
         "properties": {
+          "background": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background"
+          },
           "hpo_id": {
             "pattern": "^HP:[0-9]{7}$",
             "title": "Hpo Id",

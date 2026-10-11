@@ -114,7 +114,19 @@ def _check(dest: Path) -> int:
     return 0
 
 
+def _archive_previous(previous: str) -> str:
+    """Keep an earlier frequency-bin 0.0.1 document when a new run is written."""
+    marker = "| full | frequency-bin | 0.0.1 |"
+    if marker not in previous:
+        return ""
+    heading = previous.rfind("# Public-case method results", 0, previous.find(marker))
+    if heading == -1:
+        return previous
+    return previous[heading:].lstrip("\n")
+
+
 def _store(data: Path, out: Path) -> int:
+    previous = out.read_text() if out.is_file() else ""
     pins = load_pins()
     check_store_file(data / "all_phenopackets.zip", pins)
     loaded = load_cases(data / "all_phenopackets.zip")
@@ -168,6 +180,11 @@ def _store(data: Path, out: Path) -> int:
         text += "hpo parent map was not loaded, so vaguer left the terms as they were.\n"
     text += f"packets_skipped: {loaded.skipped}\n"
     text += f"orphanet: {frequency_status}\n"
+    archived = _archive_previous(previous)
+    if archived:
+        text = text.rstrip() + "\n\n" + archived
+        if not text.endswith("\n"):
+            text += "\n"
     out.write_text(text)
     print(
         command_summary(
@@ -221,12 +238,14 @@ def _frequency_rows(
     error_path: Path,
 ) -> tuple[str, str, RunResult | None]:
     note = (
-        "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
-        "Abstentions are misses. The scorer thresholds were not changed for this run. "
-        "A missing row stays the flat unannotated ratio, 0.01 / 0.05. "
-        "An ancestor climb to the nearest annotated parent below HP:0000001 and HP:0000118 "
-        "was measured on this pin and lowered full-set top-1 from 1292/4815 to 841/4815, "
-        "so this run and the notebook do not climb. The background stays 0.05. "
+        "Frequency-bin 0.0.2 uses P(feature | not this disease) = (k + 1) / (n + 2) "
+        "on every disorder in en_product4, including disorders that are not ranked. "
+        "A missing row contributes a ratio of 1. Abstentions are misses. "
+        "CLOSE_DISEASE_COUNT stays 10 and CLOSE_FACTOR stays 2.0. They were not refit. "
+        "An ancestor climb on the older flat 0.05 background lowered full-set top-1 "
+        "from 1292/4815 to 841/4815. That climb was not rerun on this background, "
+        "and this run does not pass a parent map. "
+        "The degree baseline and precision@k at k = 1 and k = 5 were not run. "
         "The notebook ships this scorer. Term-overlap-loo copies terms from other packets "
         "in this release, so it uses the labels the score is judged against. It is not shipped."
     )
@@ -259,7 +278,7 @@ def _frequency_rows(
                 pins,
                 note,
                 tool="frequency-bin",
-                tool_version="0.0.1",
+                tool_version="0.0.2",
             ),
             status,
             ranked_rows[0][1],

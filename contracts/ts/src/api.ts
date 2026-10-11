@@ -51,6 +51,7 @@ export interface Report {
   evidence: TermEvidence[];
   leading_orphanet_id?: string | null;
   margin: number | null;
+  margin_fact?: string | null;
   margin_reason?: "runner_up_ratio_is_zero" | null;
   probability?: number | null;
   reliability_curve?: ReliabilityPoint[] | null;
@@ -67,6 +68,7 @@ export interface TermDraftBody {
 }
 
 export interface TermEvidence {
+  background?: number | null;
   hpo_id: string;
   lower_ratio?: number | null;
   orphanet_id?: string | null;

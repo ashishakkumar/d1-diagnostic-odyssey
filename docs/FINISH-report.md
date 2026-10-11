@@ -12,7 +12,7 @@ Sign in with any name, then load one of the five synthetic cases. Each load stil
 
 | Case | What the page shows |
 | --- | --- |
-| Separated rows | ORPHA:9000001 ahead. The next row has a ratio of zero, so the margin is empty and `margin_reason` is `runner_up_ratio_is_zero`. |
+| Separated rows | ORPHA:9000001 ahead. The next row has a ratio of zero, so the margin is empty, `margin_reason` is `runner_up_ratio_is_zero`, and `margin_fact` names HP:0000272. |
 | No separated row | The page abstains (`many_within_factor`). Abstaining does not mean the person is well. |
 | Stable at both ends | ORPHA:9000011 stays first. The margin is a finite number. |
 | Variant does not move the comparison | Same catalogue rows as Separated rows, plus a typed FBN1 variant. Opting into the prior shows 0.00012 and does not move the comparison. |
@@ -20,15 +20,17 @@ Sign in with any name, then load one of the five synthetic cases. Each load stil
 
 ## Scorer
 
-Two scores were compared on Phenopacket Store 0.1.27 (sha256 `d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a`). 531 diseases are excluded because they are not a unique Orphanet id. `packets_skipped` is 0. 4,815 packets are scored. Abstentions count as misses. Thresholds stayed frozen (`CLOSE_DISEASE_COUNT` 10, `CLOSE_FACTOR` 2.0, background 0.05).
+The notebook ships frequency-bin 0.0.2. The measurement is [scorer-0.0.2.md](scorer-0.0.2.md). Pull request #8 recorded the same full-set rows; this branch re-ran `d1_eval store` after wiring that background into the scorer the notebook calls. Phenopacket Store 0.1.27 (sha256 `d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a`). 531 diseases are excluded because they are not a unique Orphanet id. `packets_skipped` is 0. 4,815 packets are scored. Abstentions count as misses. `CLOSE_DISEASE_COUNT` stays 10 and `CLOSE_FACTOR` stays 2.0. They were not refit.
 
-Term-overlap-loo is high because it reads HPO labels from other packets in the same release and leaves out only the packet being scored. That is label leakage, not an external catalogue. Its held-out row is still not independent: the catalogue for a test packet includes train packets. It is not shipped.
+`P(feature | not this disease) = (k + 1) / (n + 2)` on every disorder in Orphadata Science `en_product4`, including disorders that are not ranked. A missing row contributes a ratio of 1. Full-set top-1 is 1395/4815 (top-3 1732/4815, top-10 2026/4815, no-confident 1645/4815). The held-out split is SHA-256 of the packet id, modulo 5, remainder 0 is test. It was not used to choose a threshold, a background, or a bin edge. Full top-1 is 1129/3890 on train and 266/925 on test. 1129 + 266 = 1395. The other degradations are in `eval/RESULTS.md`. `d1_eval store` prints those frequency-bin totals and a separate line labeled `term-overlap-loo`.
 
-Frequency-bin is the Orphanet phenotype-frequency catalogue. A missing row uses the flat unannotated ratio 0.01 / 0.05. This is the scorer the notebook ships. Exact-match full-set top-1 is 1292/4815 (top-3 1589/4815, top-10 1953/4815, no-confident 1653/4815). The held-out split is SHA-256 of the packet id, modulo 5, remainder 0 is test. It was not used to choose a threshold, a background, or a bin edge. Full top-1 is 1046/3890 on train and 246/925 on test, so the two cohorts agree. The other degradations are in `eval/RESULTS.md`. `d1_eval store` prints those frequency-bin totals and a separate line labeled `term-overlap-loo`.
+Frequency-bin 0.0.1, the flat background 0.05, had full-set top-1 1292/4815 and held-out test top-1 246/925. Those rows stay archived in `eval/RESULTS.md`. They are not the shipped scorer.
 
-An ancestor climb (depth 8, stop at HP:0000001 and HP:0000118) was measured on the same pin. Full-set top-1 fell from 1292/4815 to 841/4815 (top-3 1082/4815, top-10 1619/4815, no-confident 1634/4815). Held-out test top-1 under the climb was 178/925, below the exact-match test row of 246/925. Climbing replaces a missing specific row with a parent bin, which boosts diseases that annotate a broad parent. That hurt retrieval, so the notebook and `d1_eval store` do not pass a parent map into the scorer. The climb function remains for a caller that passes parents, and a unit test covers that path. Thresholds were not refit on either run.
+Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions, and held-out test top-1 731/925. It reads HPO labels from other packets in the same release. That is label leakage, not an external catalogue. The test catalogue still includes train packets. It is not shipped.
 
-Term-overlap-loo on the same pin, for comparison only: full-set top-1 3806/4815, held-out test top-1 731/925. The gap is the leaked labels, not a bug in the frequency bins.
+An ancestor climb was measured only on the 0.0.1 flat background. Full-set top-1 fell from 1292/4815 to 841/4815. That climb was not rerun on 0.0.2, so 841/4815 is not a 0.0.2 result. The notebook and `d1_eval store` do not pass a parent map. The function remains for a caller that passes parents.
+
+Not run, so not a pass: the degree baseline, and precision@k at k = 1 and k = 5. `PLAN.md` asks the catalogue to beat that baseline on both percentage@k and precision@k over the 249 unique-map diseases. A unit test checks that one decoy gene does not change a disease rank. A store-scale decoy-gene evaluation was not run.
 
 ## Contract, prior, and model client
 

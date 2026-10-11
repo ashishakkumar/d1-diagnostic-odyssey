@@ -183,7 +183,8 @@
         "version": {"type": "string", "minLength": 1},
         "orphanet_id": {"type": "string", "minLength": 1},
         "lower_ratio": {"type": "number"},
-        "upper_ratio": {"type": "number"}
+        "upper_ratio": {"type": "number"},
+        "background": {"type": "number"}
       }
     },
     "ReliabilityPoint": {
@@ -213,6 +214,11 @@
           "items": {"$ref": "#/$defs/TermEvidence"}
         },
         "margin": {"type": ["number", "null"]},
+        "margin_fact": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why the margin is not a finite number."
+        },
         "margin_reason": {
           "type": "string",
           "enum": ["runner_up_ratio_is_zero"],

@@ -211,6 +211,23 @@ test("an abstained comparison hides the numeric margin", () => {
   expect(screen.getByText(/No row is separated/)).toBeInTheDocument();
 });
 
+test("a zero runner-up names the excluded term", () => {
+  render(
+    <ComparisonPanel
+      report={{
+        evidence: EVIDENCE,
+        margin: null,
+        margin_reason: "runner_up_ratio_is_zero",
+        margin_fact: "runner-up ORPHA:9000002 has an excluded term HP:0000272",
+        abstained: false,
+        leading_orphanet_id: "ORPHA:1",
+      }}
+    />,
+  );
+  expect(screen.getByText(/excluded term HP:0000272/)).toBeInTheDocument();
+  expect(screen.queryByText(/^Margin /)).not.toBeInTheDocument();
+});
+
 test("a separated comparison shows the numeric margin", () => {
   render(
     <ComparisonPanel

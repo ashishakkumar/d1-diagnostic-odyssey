@@ -96,6 +96,7 @@ def report_for(accepted: list[tuple[str, str]]) -> dict:
                 "orphanet_id": term["orphanet_id"],
                 "lower_ratio": term["lower_ratio"],
                 "upper_ratio": term["upper_ratio"],
+                "background": term["background"],
             }
             for term in public["evidence"]["terms"]
         ],
@@ -108,6 +109,8 @@ def report_for(accepted: list[tuple[str, str]]) -> dict:
         body["leading_orphanet_id"] = public["evidence"]["leading_orphanet_id"]
     if public.get("margin_reason"):
         body["margin_reason"] = public["margin_reason"]
+    if public.get("margin_fact"):
+        body["margin_fact"] = public["margin_fact"]
     if "probability" in public:
         body["probability"] = public["probability"]
         body["reliability_curve"] = public["reliability_curve"]

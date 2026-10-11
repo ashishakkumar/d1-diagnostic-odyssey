@@ -8,6 +8,7 @@ export type ComparisonReport = {
   }>;
   margin: number | null;
   margin_reason?: "runner_up_ratio_is_zero";
+  margin_fact?: string | null;
   abstain_reason?: string;
   leading_orphanet_id?: string;
   abstained: boolean;
@@ -29,6 +30,7 @@ export function ComparisonPanel({ report }: { report: ComparisonReport }) {
       {report.margin_reason === "runner_up_ratio_is_zero" ? (
         <p>The next row has a ratio of zero. The margin is not a finite number.</p>
       ) : null}
+      {report.margin_fact ? <p>{report.margin_fact}</p> : null}
       {report.margin != null && !report.abstained ? (
         <p>Margin {report.margin.toFixed(3)}.</p>
       ) : null}

@@ -47,6 +47,8 @@ def test_five_demo_cases_score_without_a_dose_or_a_moved_comparison(client: Test
     assert separated.leading_orphanet_id == "ORPHA:9000001"
     assert separated.margin is None
     assert separated.margin_reason == "runner_up_ratio_is_zero"
+    assert separated.margin_fact is not None
+    assert "HP:0000272" in separated.margin_fact
     page = client.get(f"/cases/{separated_id}/summary")
     assert page.status_code == 200
     assert "ORPHA:9000001" in page.text

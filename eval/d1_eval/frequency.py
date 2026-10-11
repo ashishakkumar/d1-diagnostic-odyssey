@@ -48,22 +48,25 @@ def frequency_table(
     rows: list[dict] = []
     for cited in load_orphadata_phenotypes(path):
         orpha, _sep, hpo_id = cited.subject_key.partition("|")
-        disease_id = orpha_to_disease.get(orpha)
         bin_name = _bin(cited.text)
-        if disease_id is None or not hpo_id or bin_name is None:
+        if not orpha or not hpo_id or bin_name is None:
             continue
-        rows.append(
-            {
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, cited.subject_key)),
-                "source": cited.source,
-                "version": cited.version,
-                "subject_key": cited.subject_key,
-                "orphanet_id": orpha,
-                "mondo_id": _mondo(disease_id),
-                "hpo_id": hpo_id,
-                "bin": bin_name,
-            }
-        )
+        disease_id = orpha_to_disease.get(orpha)
+        row = {
+            "id": str(uuid.uuid5(uuid.NAMESPACE_URL, cited.subject_key)),
+            "source": cited.source,
+            "version": cited.version,
+            "subject_key": cited.subject_key,
+            "orphanet_id": orpha,
+            "hpo_id": hpo_id,
+            "bin": bin_name,
+        }
+        if disease_id is None:
+            # Counted in P(feature | not this disease). Not ranked.
+            row["corpus_only"] = True
+        else:
+            row["mondo_id"] = _mondo(disease_id)
+        rows.append(row)
     return rows, orpha_to_disease
 
 

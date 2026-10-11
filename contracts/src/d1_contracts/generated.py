@@ -136,6 +136,7 @@ class TermEvidence(BaseModel):
     orphanet_id: constr(min_length=1) | None = None
     lower_ratio: float | None = None
     upper_ratio: float | None = None
+    background: float | None = None
 
 
 class ReliabilityPoint(BaseModel):
@@ -160,6 +161,9 @@ class Report(BaseModel):
     )
     evidence: list[TermEvidence]
     margin: float | None
+    margin_fact: constr(min_length=1) | None = Field(
+        None, description="Why the margin is not a finite number."
+    )
     margin_reason: Literal["runner_up_ratio_is_zero"] | None = Field(
         None,
         description="The next disease ratio is 0, so the margin is not a finite number.",

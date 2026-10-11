@@ -150,6 +150,10 @@ export interface Report {
   evidence: TermEvidence[];
   margin: number | null;
   /**
+   * Why the margin is not a finite number.
+   */
+  margin_fact?: string;
+  /**
    * The next disease ratio is 0, so the margin is not a finite number.
    */
   margin_reason?: "runner_up_ratio_is_zero";
@@ -176,6 +180,7 @@ export interface TermEvidence {
   orphanet_id?: string;
   lower_ratio?: number;
   upper_ratio?: number;
+  background?: number;
 }
 /**
  * One point on a reliability curve. predicted and observed are both between 0 and 1.

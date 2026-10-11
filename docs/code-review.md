@@ -10,7 +10,7 @@ This review reads the branch `cursor/finish-odyssey-demo-79af` against `cursor/i
 - The five synthetic cases, the stop screen, the India footer, and the opt-in allele prior are covered by `tests/web/test_demo.py` and by Playwright in `apps/web/e2e/demo.spec.ts`. The prior fixture does not change the catalogue report.
 - `contracts/openapi.json` and `contracts/ts/src/api.ts` are checked against the app by `tests/test_openapi.py`.
 - `complete()` calls the Gemini primary first. A stubbed 429 / `RESOURCE_EXHAUSTED` is the only path to OpenRouter, and that call must use an id ending in `:free`. The returned `Completion.provider` is `gemini`, `openrouter`, or `gazetteer`. A prompt without `SYNTHETIC-ONLY` raises `SyntheticRejected` before either provider is called. No fallback key degrades through `complete_or_degrade` to pinned wording. The notebook routes do not import the client.
-- Frequency-bin exact rows are what `d1_eval store` and the notebook score. The ancestor climb lowered full-set top-1 from 1292/4815 to 841/4815 on store 0.1.27, so it is not passed in. Held-out top-1 for the shipped scorer is 1046/3890 train and 246/925 test. Those rows were not used to choose a threshold.
+- Frequency-bin 0.0.2 is what `d1_eval store` and the notebook score. A re-run on this branch printed full-set top-1 1395/4815 and held-out top-1 1129/3890 train and 266/925 test. The split was not used to choose a threshold. Term-overlap-loo 3806/4815 is labeled and not shipped. The degree baseline and precision@k at 1 and 5 were not run. The ancestor climb was measured only on 0.0.1 (841/4815) and is not passed in.
 - `PLAN.md` is unchanged by this finish.
 
 ## Fixed from this review
@@ -32,4 +32,5 @@ This review reads the branch `cursor/finish-odyssey-demo-79af` against `cursor/i
 - The package is still named `d4_llm`. Renaming it does not change Gemini-then-OpenRouter.
 - `eval/RESULTS.md` has one calibration row per distinct score. That is the existing harness format.
 - Term-overlap's held-out row stays in `eval/RESULTS.md` so the leakage is visible. It is not an independent catalogue, and it is not the shipped scorer.
-- `FrequencyBinScorer` still accepts an optional parent map. The notebook and `d1_eval store` do not pass one. An empty map does not climb. The measured climb stays rejected.
+- `FrequencyBinScorer` still accepts an optional parent map. The notebook and `d1_eval store` do not pass one. The climb was not rerun on the 0.0.2 background.
+- The population prior is a checked-in allele-frequency fixture. It is opt-in, marked experimental, and does not change the catalogue comparison. This build did not call gnomAD or ClinVar. No model is used for that prior.
