@@ -2,17 +2,17 @@
 
 For research use only. Not for use in diagnostic procedures.
 
-This note is the measurement for the scorer that ships. It brings the corpus-background work from pull request #8 (`cursor/corpus-background-margin-7b44`) onto the finish branch. `PLAN.md` is unchanged. The screen stays a catalogue comparison. These rows are not a benefit to a real patient, not a probability for a person outside this public set, and not a diagnosis.
+This note is the measurement for the synthetic frequency-bin card. It brings the corpus-background work from pull request #8 (`cursor/corpus-background-margin-7b44`) onto the finish branch. `PLAN.md` is unchanged. The screen stays a catalogue comparison. These rows are not a benefit to a real patient, not a probability for a person outside this public set, and not a diagnosis.
 
 ## What ships
 
-Frequency-bin 0.0.2 ships. Term-overlap-loo does not.
+The synthetic notebook card is frequency-bin 0.0.2. Term-overlap-loo does not ship. Frequency-bin does not beat the degree baseline, so it is not the public-case ranker. The public-case ranker is Resnik best-match average. It was chosen on fit and validation, then scored once on the held-out split. That measurement is [../eval/bars-resnik.md](../eval/bars-resnik.md). On the 925 test packets it beats the degree baseline at k=1 (419/925 vs 327/925) and at k=5 (614/925 vs 533/925; precision@5 0.132757 vs 0.115243). It abstains when the best score is at or below zero. The comparison panel says the on-screen rows are the frequency-bin card.
 
 `P(feature | not this disease) = (k + 1) / (n + 2)` on every disorder in Orphadata Science `en_product4`, including disorders that are not ranked. A missing row contributes a ratio of 1. `CLOSE_DISEASE_COUNT` stays 10 and `CLOSE_FACTOR` stays 2.0. `phenotype.hpoa` is not loaded. The prior counts were not fitted to Phenopacket Store.
 
 Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions. It is higher because the catalogue is other packets in the same store release, with only the packet being scored left out. That uses the labels the score is judged against. A held-out packet split does not fix it: the catalogue for a test packet still includes train packets. It is printed, labeled `term-overlap-loo`, and not shipped.
 
-An ancestor climb (depth 8, stop at HP:0000001 and HP:0000118) was measured on the older flat background of 0.05. Full-set top-1 fell from 1292/4815 to 841/4815. That climb was not rerun on the corpus background, so 841/4815 is not a 0.0.2 result. The notebook and `d1_eval store` do not pass a parent map. The function remains for a caller that passes parents. Thresholds were not refit on a training split or on the held-out split.
+An ancestor climb (depth 8, stop at HP:0000001 and HP:0000118) was measured on the older flat background of 0.05. Full-set top-1 fell from 1292/4815 to 841/4815. On this corpus background the climb was measured on train packets only, with no abstention: top-1 717/3890 against 1172/3890 with no climb. That climb is not shipped. The notebook and `d1_eval store` do not pass a parent map. Thresholds were not refit on a training split or on the held-out split.
 
 ## Degree baseline and precision@k
 
@@ -31,9 +31,9 @@ Packet denominator is the 4815 unique-map packets. Abstentions are misses. The 2
 | 249 diseases | 1 | mean of packet rates | mean of packet rates | 0.353135 | 0.355850 | 0.353135 | 0.355850 |
 | 249 diseases | 5 | mean of packet rates | mean of packet rates | 0.457476 | 0.536436 | 0.091495 | 0.107287 |
 
-Frequency-bin does not beat the degree baseline on percentage@k or precision@k at k = 1 or k = 5, on all packets, on the held-out test packets, or on the 249-disease mean. That pass bar is not met. Thresholds were not changed after this measurement.
+Frequency-bin does not beat the degree baseline on percentage@k or precision@k at k = 1 or k = 5, on all packets, on the held-out test packets, or on the 249-disease mean. That pass bar is not met for frequency-bin. Thresholds were not changed after this measurement.
 
-A store-scale decoy-gene evaluation is NOT MEASURED / pending. A unit test checks one synthetic decoy.
+The public-case ranker is a different method. See [../eval/bars-resnik.md](../eval/bars-resnik.md). A decoy gene on each of the 925 held-out packets did not change present HPO ids or Resnik scores.
 
 ## 0.0.1, kept for comparison
 

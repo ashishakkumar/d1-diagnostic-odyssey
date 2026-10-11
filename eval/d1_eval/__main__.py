@@ -34,6 +34,7 @@ from d1_eval.harness import (
     time_split_note,
     unique_orphanet,
 )
+from d1_eval.heldout import main as heldout_main
 
 LEVELS = ("full", "fewer", "vaguer", "patient")
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
@@ -57,6 +58,13 @@ def main(argv: list[str] | None = None) -> int:
     bars.add_argument("--data", type=Path, required=True)
     bars.add_argument("--out", type=Path, required=True)
 
+    heldout = commands.add_parser("heldout")
+    heldout.add_argument("--data", type=Path, required=True)
+    heldout.add_argument("--choice", type=Path, required=True)
+    heldout.add_argument("--out", type=Path, required=True)
+    heldout.add_argument("--record", type=Path, required=True)
+    heldout.add_argument("--results", type=Path, required=False)
+
     check = commands.add_parser("check-download")
     check.add_argument("--data", type=Path, required=True)
 
@@ -71,6 +79,9 @@ def main(argv: list[str] | None = None) -> int:
         return _store(args.data, args.out)
     if args.command == "bars":
         return _bars(args.data, args.out)
+    if args.command == "heldout":
+        heldout_main(args.data, args.choice, args.out, args.results, args.record)
+        return 0
     raise ValueError(args.command)
 
 
@@ -269,11 +280,14 @@ def _frequency_rows(
         "A missing row contributes a ratio of 1. Abstentions are misses. "
         "CLOSE_DISEASE_COUNT stays 10 and CLOSE_FACTOR stays 2.0. They were not refit. "
         "An ancestor climb on the older flat 0.05 background lowered full-set top-1 "
-        "from 1292/4815 to 841/4815. That climb was not rerun on this background, "
-        "and this run does not pass a parent map. "
-        "Degree baseline and precision@k at k = 1 and k = 5 are in eval/bars-0.0.2.md. "
-        "The notebook ships this scorer. Term-overlap-loo copies terms from other packets "
-        "in this release, so it uses the labels the score is judged against. It is not shipped."
+        "from 1292/4815 to 841/4815. A train-only climb on this background is in "
+        "eval/bars-resnik.md and is not used by this command. This run does not pass a parent map. "
+        "Degree baseline and precision@k at k = 1 and k = 5 for frequency-bin are in "
+        "eval/bars-0.0.2.md. Frequency-bin does not beat that baseline. "
+        "The public-case ranker is Resnik best-match average in eval/bars-resnik.md. "
+        "The synthetic notebook card uses frequency-bin. "
+        "Term-overlap-loo copies terms from other packets in this release, "
+        "so it uses the labels the score is judged against. It is not shipped."
     )
     if not xml_path.is_file():
         reason = (

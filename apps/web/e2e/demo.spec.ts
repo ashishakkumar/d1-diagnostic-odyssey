@@ -12,6 +12,10 @@ test("five synthetic cases, the comparison, and the stop screen", async ({ page 
 
   await page.getByRole("button", { name: "Load Separated rows" }).click();
   await expect(page.getByTestId("comparison")).toContainText("ORPHA:9000001");
+  await expect(page.getByTestId("public-ranker")).toContainText(
+    "beats the degree baseline at k=1 and k=5",
+  );
+  await expect(page.getByTestId("public-ranker")).toContainText("synthetic frequency-bin card");
   await expect(page.getByText("ratio of zero").first()).toBeVisible();
   await expect(page.getByText("long for the hand").first()).toBeVisible();
   await expect(page.getByRole("contentinfo")).toContainText("112");

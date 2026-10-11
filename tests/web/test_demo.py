@@ -54,6 +54,8 @@ def test_five_demo_cases_score_without_a_dose_or_a_moved_comparison(client: Test
     assert "ORPHA:9000001" in page.text
     assert "ratio of zero" in page.text
     assert "long for the hand" in page.text
+    assert "synthetic frequency-bin card" in page.text
+    assert "beats the degree baseline at k=1 and k=5" in page.text
     assert "does not choose a dose" in page.text
     assert "112" in page.text
 

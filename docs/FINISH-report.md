@@ -24,7 +24,7 @@ Sign in with any name, then load one of the five synthetic cases. Each load stil
 
 ## Scorer
 
-The notebook ships frequency-bin 0.0.2. The measurement is [scorer-0.0.2.md](scorer-0.0.2.md). Pull request #8 recorded the same full-set rows; this branch re-ran `d1_eval store` after wiring that background into the scorer the notebook calls. Phenopacket Store 0.1.27 (sha256 `d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a`). 531 diseases are excluded because they are not a unique Orphanet id. `packets_skipped` is 0. 4,815 packets are scored. Abstentions count as misses. `CLOSE_DISEASE_COUNT` stays 10 and `CLOSE_FACTOR` stays 2.0. They were not refit.
+The synthetic notebook card is frequency-bin 0.0.2. The public-case ranker is Resnik best-match average. The measurement for the card is [scorer-0.0.2.md](scorer-0.0.2.md). The one held-out look at the public-case ranker is [../eval/bars-resnik.md](../eval/bars-resnik.md). Pull request #8 recorded the same full-set frequency-bin rows; this branch re-ran `d1_eval store` after wiring that background into the scorer the notebook calls. Phenopacket Store 0.1.27 (sha256 `d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a`). 531 diseases are excluded because they are not a unique Orphanet id. `packets_skipped` is 0. 4,815 packets are scored. Abstentions count as misses. `CLOSE_DISEASE_COUNT` stays 10 and `CLOSE_FACTOR` stays 2.0. They were not refit.
 
 `P(feature | not this disease) = (k + 1) / (n + 2)` on every disorder in Orphadata Science `en_product4`, including disorders that are not ranked. A missing row contributes a ratio of 1. Full-set top-1 is 1395/4815 (top-3 1732/4815, top-10 2026/4815, no-confident 1645/4815). The held-out split is SHA-256 of the packet id, modulo 5, remainder 0 is test. It was not used to choose a threshold, a background, or a bin edge. Full top-1 is 1129/3890 on train and 266/925 on test. 1129 + 266 = 1395. The other degradations are in `eval/RESULTS.md`. `d1_eval store` prints those frequency-bin totals and a separate line labeled `term-overlap-loo`.
 
@@ -32,7 +32,7 @@ Frequency-bin 0.0.1, the flat background 0.05, had full-set top-1 1292/4815 and 
 
 Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions, and held-out test top-1 731/925. It reads HPO labels from other packets in the same release. That is label leakage, not an external catalogue. The test catalogue still includes train packets. It is not shipped.
 
-An ancestor climb was measured only on the 0.0.1 flat background. Full-set top-1 fell from 1292/4815 to 841/4815. That climb was not rerun on 0.0.2, so 841/4815 is not a 0.0.2 result. The notebook and `d1_eval store` do not pass a parent map. The function remains for a caller that passes parents.
+An ancestor climb was measured on the 0.0.1 flat background. Full-set top-1 fell from 1292/4815 to 841/4815. On the 0.0.2 corpus background the same climb was measured on train packets only, with no abstention: top-1 fell from 1172/3890 to 717/3890. That climb is not shipped. The notebook and `d1_eval store` do not pass a parent map.
 
 Degree baseline and precision@k were measured on this pass for the shipped frequency-bin 0.0.2 scorer. No parent map. `CLOSE_DISEASE_COUNT` and `CLOSE_FACTOR` were not refit. The held-out split was not used to choose a threshold. Packet top-1 stayed 1395/4815, train 1129/3890, test 266/925, which matches the earlier store run. The full table is [../eval/bars-0.0.2.md](../eval/bars-0.0.2.md) and the same section at the top of `eval/RESULTS.md`.
 
@@ -45,7 +45,24 @@ Degree baseline and precision@k were measured on this pass for the shipped frequ
 | 249 diseases, unweighted mean | 1 | percentage 0.353135, precision 0.353135 | percentage 0.355850, precision 0.355850 |
 | 249 diseases, unweighted mean | 5 | percentage 0.457476, precision 0.091495 | percentage 0.536436, precision 0.107287 |
 
-precision@k is the mean of 1/k on a hit and 0 on a miss, so precision@1 equals percentage@1. The denominator stays k when the list is shorter than k. Abstentions are misses. Ties take the worst rank. Frequency-bin does not beat the degree baseline on percentage@k or precision@k at k = 1 or k = 5. That pass bar is not met. A store-scale decoy-gene evaluation is NOT MEASURED / pending.
+precision@k is the mean of 1/k on a hit and 0 on a miss, so precision@1 equals percentage@1. The denominator stays k when the list is shorter than k. Abstentions are misses. Ties take the worst rank. Frequency-bin does not beat the degree baseline on percentage@k or precision@k at k = 1 or k = 5. That pass bar is not met for frequency-bin.
+
+Train-only diagnosis, 3890 packets, test packets left out: frequency-bin with its catalogue abstention is 1129/3890 at k=1 and 1501/3890 at k=5. Ranking the lower ratios anyway, with no abstention, is 1172/3890 and 1983/3890. Both stay behind the degree baseline on train (1320/3890 and 2132/3890). Truth-disease lower ratio 0, an excluded bin zeroing the product, is 18/3890. Of 33952 train query terms, 11862 are an exact non-excluded annotation of the truth disease, and a further 12650 have an ancestor in that disease's annotation closure. The frequency-bin product does not use that ancestor relation. A parent climb inside the product makes the train top-1 worse, as above. A listed bin can also score below a missing row, because a missing row contributes ratio 1 and a bin lower bound below the corpus background contributes less.
+
+Candidates were scored on fit and validation only. Validation is the train packets whose SHA-256(packet id, newline, "validation") modulo 4 is 0: 993 packets. Fit is the other 2897 train packets. The 925 test packets were skipped. Abstention for each candidate was chosen on fit by higher percentage@1, then percentage@5. Every candidate stayed on `raw` (abstain only when the best score is at or below zero), because extra abstention only removes hits. The degree baseline kept its published rule (best score at or below zero, or at least 10 diseases tied at the best score). A candidate beats that baseline on validation when percentage@k and precision@k at k=1 and k=5 are all strictly greater. Resnik best-match average won: validation k=1 467/993 (0.470292) against degree 328/993 (0.330312), and k=5 627/993 (0.631420), precision 0.126284, against degree 526/993 (0.529708), precision 0.105942. Information-content overlap, the one-way phenomizer mean, and BM25 also beat the degree baseline on validation and were not selected, because Resnik's validation percentage@1 was higher. The degree-prior-corrected frequency scorer did not beat the baseline on validation (k=1 303/993, k=5 498/993). The selection record is `eval/choice.json`. It was not rewritten after the test look except to set `test_scored` true.
+
+The held-out look scored only Resnik best-match average, with the fit-chosen `raw` abstention, against the degree baseline. Degree on that split matches the earlier bar: 327/925 at k=1 and 533/925 at k=5.
+
+| cohort | k | Resnik best-match average | degree baseline |
+| --- | --- | --- | --- |
+| test 925 packets | 1 | 419/925 (0.452973) | 327/925 (0.353514) |
+| test 925 packets | 5 | 614/925 (0.663784), precision@5 0.132757 | 533/925 (0.576216), precision@5 0.115243 |
+| 165 of 249 diseases with a test packet | 1 | percentage 0.480944, precision 0.480944 | percentage 0.386210, precision 0.386210 |
+| 165 of 249 diseases with a test packet | 5 | percentage 0.665217, precision 0.133043 | percentage 0.553540, precision 0.110708 |
+
+Diseases with no test packet are left out of that mean. 84 of the 249 unique-map diseases have no test packet. Resnik best-match average beats the degree baseline on percentage@k and precision@k at k=1 and k=5, on the test packets and on the diseases that have a test packet. Adding a decoy gene to each of the 925 test packets left the present HPO ids unchanged, recorded the decoy gene, and left the Resnik scores unchanged. Rebuild failures: 0.
+
+The comparison panel states that the rows on the page are the synthetic frequency-bin card, and that the public-case ranker beats the degree baseline at k=1 and k=5. The five synthetic stories stay on the frequency-bin card, including the abstention when many rows sit within a factor of two. The public-case abstention is the fit-chosen rule and is not the rule on that card.
 
 ## Measured on this revision
 

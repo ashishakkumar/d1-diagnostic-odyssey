@@ -20,6 +20,11 @@ export function ComparisonPanel({ report }: { report: ComparisonReport }) {
     <section className="space-y-2 rounded-md border border-border p-4" data-testid="comparison">
       <h2 className="text-lg">Catalogue comparison</h2>
       <p>This is not a diagnosis. The reported variant is not an input.</p>
+      <p data-testid="public-ranker">
+        The rows on this page are the synthetic frequency-bin card. The public-case ranker is
+        Resnik best-match average. It abstains when the best score is at or below zero. On the
+        held-out split that ranker beats the degree baseline at k=1 and k=5.
+      </p>
       {report.abstained ? (
         <p>No row is separated from the others. This does not mean you are well.</p>
       ) : (

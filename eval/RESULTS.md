@@ -59,6 +59,74 @@ On test packets at k=5, frequency-bin percentage@k does not beat the degree base
 On unique-map diseases at k=1, frequency-bin percentage@k does not beat the degree baseline (0.353135 vs 0.355850) and precision@k does not beat it (0.353135 vs 0.355850).
 On unique-map diseases at k=5, frequency-bin percentage@k does not beat the degree baseline (0.457476 vs 0.536436) and precision@k does not beat it (0.091495 vs 0.107287).
 
+# Resnik best-match average, held-out once
+
+For research use only. Not for use in diagnostic procedures.
+
+The public-case ranker was chosen on fit and validation before this file was written. The winner is resnik_bma. Abstention is raw: a best score at or below zero abstains, and a positive tie does not. That mode was the fit-split choice. The degree baseline keeps its published rule: best score at or below zero, or at least 10 diseases tied at the best score. Other candidates were not scored on this split. phenotype.hpoa was not loaded. en_product6 was not loaded.
+
+The synthetic notebook card stays the frequency-bin comparison. These rows do not replace that card. The five synthetic stories stay on that card.
+
+store_sha256: d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a
+unique_map_diseases: 249
+test_packets: 925
+diseases_with_a_test_packet: 165
+
+## Why frequency-bin loses to the degree baseline
+
+Measured on train packets only. Test packets were not in this loop. The shipped frequency-bin scorer does not receive a parent map. A missing row contributes a ratio of 1. A listed bin whose lower bound sits below the corpus background scores below a missing row. Abstentions are misses. Climbing to a parent inside that product was measured here on the train split and is not shipped.
+
+| train check | k | hits | denominator | percentage@k |
+| --- | --- | --- | --- | --- |
+| frequency_with_abstention | 1 | 1129 | 3890 | 0.290231 |
+| frequency_with_abstention | 5 | 1501 | 3890 | 0.385861 |
+| frequency_ranked_anyway | 1 | 1172 | 3890 | 0.301285 |
+| frequency_ranked_anyway | 5 | 1983 | 3890 | 0.509769 |
+| frequency_parent_climb_ranked_anyway | 1 | 717 | 3890 | 0.184319 |
+| frequency_parent_climb_ranked_anyway | 5 | 1374 | 3890 | 0.353213 |
+
+Train packets whose truth disease has lower ratio 0: 18 / 3890.
+Train query terms: 33952. Exact annotation on the truth disease: 11862. Additional ancestor relation: 12650.
+
+## Held-out packets
+
+percentage@k is hits over the test-packet denominator. Abstentions are misses. precision@k is the mean of 1/k on a hit and 0 on a miss. Ties take the worst rank.
+
+| tool | k | hits | denominator | percentage@k | precision@k |
+| --- | --- | --- | --- | --- | --- |
+| resnik_bma | 1 | 419 | 925 | 0.452973 | 0.452973 |
+| resnik_bma | 5 | 614 | 925 | 0.663784 | 0.132757 |
+| degree | 1 | 327 | 925 | 0.353514 | 0.353514 |
+| degree | 5 | 533 | 925 | 0.576216 | 0.115243 |
+
+Disease rows are the unweighted mean of each disease's test-packet rate. A unique-map disease with no test packet is left out of this mean. 165 of 249 unique-map diseases have a test packet.
+
+| tool | k | diseases_in_mean | percentage@k | precision@k |
+| --- | --- | --- | --- | --- |
+| resnik_bma | 1 | 165 | 0.480944 | 0.480944 |
+| resnik_bma | 5 | 165 | 0.665217 | 0.133043 |
+| degree | 1 | 165 | 0.386210 | 0.386210 |
+| degree | 5 | 165 | 0.553540 | 0.110708 |
+
+## Comparison
+
+On test packets at k=1, resnik_bma percentage@k beats the degree baseline (0.452973 vs 0.353514) and precision@k beats it (0.452973 vs 0.353514).
+On unique-map diseases with a test packet at k=1, resnik_bma percentage@k beats the degree baseline (0.480944 vs 0.386210) and precision@k beats it (0.480944 vs 0.386210).
+On test packets at k=5, resnik_bma percentage@k beats the degree baseline (0.663784 vs 0.576216) and precision@k beats it (0.132757 vs 0.115243).
+On unique-map diseases with a test packet at k=5, resnik_bma percentage@k beats the degree baseline (0.665217 vs 0.553540) and precision@k beats it (0.133043 vs 0.110708).
+
+The held-out packet bar beats the degree baseline at both k=1 and k=5 on percentage@k and precision@k.
+
+## Decoy gene
+
+A gene symbol was added to each test packet and the case was rebuilt. The ranker is called with present HPO ids only.
+
+packets: 925
+hpo_unchanged: 925
+decoy_gene_recorded: 925
+scores_unchanged: 925
+rebuild_failures: 0
+
 ## Calibration
 
 ### full
@@ -5383,7 +5451,7 @@ On unique-map diseases at k=5, frequency-bin percentage@k does not beat the degr
 
 ## Time-split leakage note
 
-Frequency-bin 0.0.2 uses P(feature | not this disease) = (k + 1) / (n + 2) on every disorder in en_product4, including disorders that are not ranked. A missing row contributes a ratio of 1. Abstentions are misses. CLOSE_DISEASE_COUNT stays 10 and CLOSE_FACTOR stays 2.0. They were not refit. An ancestor climb on the older flat 0.05 background lowered full-set top-1 from 1292/4815 to 841/4815. That climb was not rerun on this background, and this run does not pass a parent map. Degree baseline and precision@k at k = 1 and k = 5 are in the section at the top of this file and in eval/bars-0.0.2.md. The notebook ships this scorer. Term-overlap-loo copies terms from other packets in this release, so it uses the labels the score is judged against. It is not shipped.
+Frequency-bin 0.0.2 uses P(feature | not this disease) = (k + 1) / (n + 2) on every disorder in en_product4, including disorders that are not ranked. A missing row contributes a ratio of 1. Abstentions are misses. CLOSE_DISEASE_COUNT stays 10 and CLOSE_FACTOR stays 2.0. They were not refit. An ancestor climb on the older flat 0.05 background lowered full-set top-1 from 1292/4815 to 841/4815. A train-only climb on this background is in eval/bars-resnik.md and was not used for these frequency-bin rows. This run does not pass a parent map. Degree baseline and precision@k at k = 1 and k = 5 for frequency-bin are in the section at the top of this file and in eval/bars-0.0.2.md. Frequency-bin does not beat that baseline. The public-case ranker is Resnik best-match average, recorded in eval/bars-resnik.md. The synthetic notebook card uses frequency-bin. Term-overlap-loo copies terms from other packets in this release, so it uses the labels the score is judged against. It is not shipped.
 
 ## Held-out split
 
