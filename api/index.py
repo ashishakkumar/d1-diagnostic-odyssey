@@ -23,7 +23,27 @@ for rel in (
 from app.routes.notebook import app as _fastapi_app  # noqa: E402
 
 
+async def _diag(send):
+    import json
+    import traceback
+
+    import psycopg
+
+    out = {}
+    try:
+        with psycopg.connect(os.environ["DATABASE_URL"], connect_timeout=10) as c:
+            c.execute("SET ROLE d1_api")
+            out["ok"] = c.execute("select current_user, session_user").fetchone()
+    except Exception:
+        out["err"] = traceback.format_exc()[-1500:].replace(os.environ.get("DATABASE_URL", "x"), "***")
+    body = json.dumps(out, default=str).encode()
+    await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
+    await send({"type": "http.response.body", "body": body})
+
+
 async def app(scope, receive, send):
+    if scope["type"] == "http" and scope.get("path", "").endswith("/_diag"):
+        return await _diag(send)
     if scope["type"] in ("http", "websocket"):
         path = scope.get("path", "")
         for prefix in ("/api/index", "/api"):
