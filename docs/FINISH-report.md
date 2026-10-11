@@ -24,7 +24,7 @@ The notebook ships frequency-bin 0.0.2. The measurement is [scorer-0.0.2.md](sco
 
 `P(feature | not this disease) = (k + 1) / (n + 2)` on every disorder in Orphadata Science `en_product4`, including disorders that are not ranked. A missing row contributes a ratio of 1. Full-set top-1 is 1395/4815 (top-3 1732/4815, top-10 2026/4815, no-confident 1645/4815). The held-out split is SHA-256 of the packet id, modulo 5, remainder 0 is test. It was not used to choose a threshold, a background, or a bin edge. Full top-1 is 1129/3890 on train and 266/925 on test. 1129 + 266 = 1395. The other degradations are in `eval/RESULTS.md`. `d1_eval store` prints those frequency-bin totals and a separate line labeled `term-overlap-loo`.
 
-Frequency-bin 0.0.1, the flat background 0.05, had full-set top-1 1292/4815 and held-out test top-1 246/925. Those rows stay archived in `eval/RESULTS.md`. They are not the shipped scorer.
+Frequency-bin 0.0.1, the flat background 0.05, had full-set top-1 1292/4815 and held-out test top-1 246/925. Those rows stay in `eval/RESULTS.md` under the heading Archived frequency-bin 0.0.1. They are not the shipped scorer.
 
 Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions, and held-out test top-1 731/925. It reads HPO labels from other packets in the same release. That is label leakage, not an external catalogue. The test catalogue still includes train packets. It is not shipped.
 

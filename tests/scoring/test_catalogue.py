@@ -230,6 +230,29 @@ def test_a_tie_for_first_is_not_confident() -> None:
     assert report.margin == pytest.approx(1)
 
 
+def test_a_freed_table_does_not_score_the_next_table() -> None:
+    for index in range(40):
+        orphanet = f"ORPHA:{9000100 + index}"
+        rows = [
+            frequency_row(index, orphanet, f"MONDO:{8000100 + index}", "HP:0001166", "obligate")
+        ]
+        report = catalogue_score([("HP:0001166", "present")], rows)
+        assert report.diseases[0].orphanet_id == orphanet
+
+
+def test_an_edited_bin_is_scored_on_the_next_call() -> None:
+    rows = frequency_rows()
+    catalogue_score([("HP:0001166", "present")], rows)
+    for row in rows:
+        if row["orphanet_id"] == "ORPHA:9000002" and row["hpo_id"] == "HP:0001166":
+            row["bin"] = "excluded"
+    report = catalogue_score([("HP:0001166", "present")], rows)
+    leader = next(disease for disease in report.diseases if disease.orphanet_id == "ORPHA:9000001")
+    term = next(item for item in leader.terms if item.hpo_id == "HP:0001166")
+    assert term.background == pytest.approx(1 / 3)
+    assert term.lower_ratio == pytest.approx(3)
+
+
 def test_a_separated_leader_keeps_a_margin() -> None:
     # Ten disorders list both terms, so p = 10/11.
     # Leader obligate product is 1.21. Each other very-rare product is 0.000121.

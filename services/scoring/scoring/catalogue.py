@@ -354,11 +354,6 @@ def _annotated_row(
     return None
 
 
-# ponytail: cache key is (id, len). An in-place edit of a row is not seen.
-# Upgrade: drop the cache if each call copies the rows.
-_PREPARED: dict[tuple[int, int], tuple] = {}
-
-
 def _corpus(rows: Sequence[Mapping]) -> tuple[int, dict[str, set[str]]]:
     diseases: set[str] = set()
     positive: dict[str, set[str]] = defaultdict(set)
@@ -378,15 +373,9 @@ def _corpus(rows: Sequence[Mapping]) -> tuple[int, dict[str, set[str]]]:
 
 
 def _prepare(rows: Sequence[Mapping]) -> tuple:
-    key = (id(rows), len(rows))
-    cached = _PREPARED.get(key)
-    if cached is not None:
-        return cached
     grouped, scoreable, excluded = _partition(rows)
     n_diseases, positive = _corpus(rows)
-    cached = (grouped, scoreable, excluded, n_diseases, positive)
-    _PREPARED[key] = cached
-    return cached
+    return grouped, scoreable, excluded, n_diseases, positive
 
 
 def catalogue_score(

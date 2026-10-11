@@ -25,6 +25,8 @@ This review reads the branch `cursor/finish-odyssey-demo-79af` against `cursor/i
 - A lone OpenAPI `const` was rendered as `string`. `margin_reason` in `contracts/ts/src/api.ts` is now `"runner_up_ratio_is_zero" | null`.
 - A gazetteer degrade is appended to the jsonl log and is not stored in the replay cache. A pinned sentence must not hide a key that appears later.
 - `create_app` is imported at the top of `export_openapi.py`. The API package does not import that module.
+- The catalogue prepare step no longer caches by `id(rows)` and length. A freed list can reuse that id, and an in-place bin edit would keep a stale corpus rate. `_prepare` rebuilds the partition and the corpus on every call. `test_a_freed_table_does_not_score_the_next_table` and `test_an_edited_bin_is_scored_on_the_next_call` lock that.
+- The earlier flat-background block in `eval/RESULTS.md` is headed "Archived frequency-bin 0.0.1" and says that run is not the shipped scorer. The 0.0.2 note above it still says the notebook ships that scorer. A later `d1_eval store` prepends the same banner.
 
 ## Left as they are
 

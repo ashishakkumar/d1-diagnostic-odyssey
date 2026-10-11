@@ -121,8 +121,19 @@ def _archive_previous(previous: str) -> str:
         return ""
     heading = previous.rfind("# Public-case method results", 0, previous.find(marker))
     if heading == -1:
-        return previous
-    return previous[heading:].lstrip("\n")
+        body = previous
+    else:
+        body = previous[heading:].lstrip("\n")
+    body = body.replace(
+        "The background stays 0.05. The notebook ships this scorer.",
+        "The background stays 0.05. This archived run is not the shipped scorer.",
+    )
+    banner = (
+        "# Archived frequency-bin 0.0.1\n\n"
+        "The notebook does not ship this block. It is the earlier flat-background run, "
+        "kept so the 1292/4815 rows stay next to the 0.0.2 document above.\n\n"
+    )
+    return banner + body
 
 
 def _store(data: Path, out: Path) -> int:

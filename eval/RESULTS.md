@@ -5495,6 +5495,10 @@ hpo_sha256: 93dace952fcb3ec4728818857f6ba76bc2d5312f4d83266519b8694b8e798f22
 packets_skipped: 0
 orphanet: en_product4 sha256 4f44e8a61201399911aa1ba44a293c0ccaa5ce11272c47d40862255cb72f6b32 rows 116664
 
+# Archived frequency-bin 0.0.1
+
+The notebook does not ship this block. It is the earlier flat-background run, kept so the 1292/4815 rows stay next to the 0.0.2 document above.
+
 # Public-case method results
 
 For research use only. Not for use in diagnostic procedures.
@@ -7431,7 +7435,7 @@ These rows are method results on public cases. They are not a benefit to a real 
 
 ## Time-split leakage note
 
-Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. Abstentions are misses. The scorer thresholds were not changed for this run. A missing row stays the flat unannotated ratio, 0.01 / 0.05. An ancestor climb to the nearest annotated parent below HP:0000001 and HP:0000118 was measured on this pin and lowered full-set top-1 from 1292/4815 to 841/4815, so this run and the notebook do not climb. The background stays 0.05. The notebook ships this scorer. Term-overlap-loo copies terms from other packets in this release, so it uses the labels the score is judged against. It is not shipped.
+Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. Abstentions are misses. The scorer thresholds were not changed for this run. A missing row stays the flat unannotated ratio, 0.01 / 0.05. An ancestor climb to the nearest annotated parent below HP:0000001 and HP:0000118 was measured on this pin and lowered full-set top-1 from 1292/4815 to 841/4815, so this run and the notebook do not climb. The background stays 0.05. This archived run is not the shipped scorer. Term-overlap-loo copies terms from other packets in this release, so it uses the labels the score is judged against. It is not shipped.
 
 ## Held-out split
 
