@@ -7,7 +7,15 @@ from uuid import UUID
 import psycopg
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from app.routes.ports import scan_notebook_text
+from app.routes.ports import (
+    change_events,
+    country_footer,
+    red_flag,
+    render_sentence,
+    report_for,
+    scan_notebook_text,
+)
+from d1_contracts import LabReportedVariant
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://d1:d1@127.0.0.1:5432/d1")
 _ENV = Environment(
@@ -39,7 +47,7 @@ def accepted_rows(case_id: UUID) -> list[tuple[object, str, dict]]:
     return [(row[0], str(row[1]), row[2] if isinstance(row[2], dict) else {}) for row in rows]
 
 
-def summary_text(case_id: UUID) -> str:
+def _parts(case_id: UUID) -> tuple[list[dict], list[dict]]:
     terms: list[dict] = []
     variants: list[dict] = []
     for _decided_at, kind, body in accepted_rows(case_id):
@@ -49,12 +57,108 @@ def summary_text(case_id: UUID) -> str:
             expressions = (body.get("variation") or {}).get("expressions") or []
             variant = expressions[0].get("value", "") if expressions else ""
             variants.append({**body, "variant": variant})
+    return terms, variants
+
+
+def _append(
+    pieces: list[str],
+    spans: list[tuple[int, int, str]],
+    sentence: str,
+    quotes: list[tuple[int, int, str]],
+) -> None:
+    offset = sum(len(part) + 1 for part in pieces)
+    pieces.append(sentence)
+    for start, end, speaker in quotes:
+        spans.append((offset + start, offset + end, speaker))
+
+
+def summary_text(case_id: UUID) -> str:
+    terms, variants = _parts(case_id)
+    typed = "\n".join(
+        str(item)
+        for item in [
+            *(term.get("label") or "" for term in terms),
+            *(term.get("explanation") or "" for term in terms),
+            *(variant.get("lab_words") or "" for variant in variants),
+        ]
+        if item
+    )
+    screen = red_flag(typed)
+    if screen is not None:
+        return scan_notebook_text(f"{screen['body']}\n{screen['footer']}")
+
+    pieces: list[str] = []
+    spans: list[tuple[int, int, str]] = []
     rendered = _ENV.get_template("summary.txt.j2").render(
         case_id=str(case_id),
         terms=terms,
         variants=variants,
     )
-    return scan_notebook_text(rendered)
+    _append(pieces, spans, rendered.rstrip("\n"), [])
+    for term in terms:
+        presence = str(term.get("presence") or "")
+        if presence not in ("present", "excluded"):
+            continue
+        template_id = "questions_for_doctor" if presence == "present" else "reason_marked_excluded"
+        sentence, quotes = render_sentence(
+            template_id,
+            {
+                "label": str(term.get("label") or term.get("hpo_id")),
+                "hpo_id": str(term["hpo_id"]),
+                "presence": presence,
+            },
+        )
+        _append(pieces, spans, sentence, quotes)
+    for variant in variants:
+        sentence, quotes = render_sentence(
+            "lab_report_words",
+            {
+                "report_date": str(variant.get("report_date") or ""),
+                "gene_symbol": str(variant.get("gene_symbol") or ""),
+                "lab_words": str(variant.get("lab_words") or ""),
+            },
+        )
+        _append(pieces, spans, sentence, quotes)
+    stored = []
+    for variant in variants:
+        payload = {key: value for key, value in variant.items() if key != "variant"}
+        stored.append(LabReportedVariant.model_validate(payload))
+    for event in change_events(stored):
+        sentence, quotes = render_sentence(
+            "public_database_change",
+            {
+                "source": event.source,
+                "version": event.version,
+                "subject_key": event.subject_key,
+                "previous_text": event.previous_text or "",
+                "current_text": event.current_text or "",
+            },
+        )
+        _append(pieces, spans, sentence, quotes)
+    accepted = [
+        (str(term["hpo_id"]), str(term["presence"]))
+        for term in terms
+        if term.get("presence") in ("present", "excluded")
+    ]
+    if report_for(accepted)["abstained"]:
+        present = sum(1 for term in terms if term.get("presence") == "present")
+        sentence, quotes = render_sentence("not_confident_yet", {"confirmed_count": present})
+        _append(pieces, spans, sentence, quotes)
+    _append(pieces, spans, country_footer(), [])
+    return scan_notebook_text("\n".join(pieces), spans)
+
+
+def pdf_text(data: bytes) -> str:
+    chunks: list[str] = []
+    for piece in data.split(b"Tj"):
+        start = piece.rfind(b"(")
+        end = piece.rfind(b")")
+        if start < 0 or end < start:
+            continue
+        raw = piece[start + 1 : end]
+        raw = raw.replace(b"\\(", b"(").replace(b"\\)", b")").replace(b"\\\\", b"\\")
+        chunks.append(raw.decode("cp1252", errors="replace"))
+    return "\n".join(chunks)
 
 
 def text_to_pdf(text: str) -> bytes:

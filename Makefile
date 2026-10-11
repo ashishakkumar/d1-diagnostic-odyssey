@@ -57,12 +57,14 @@ test: db-reset
 safety-scan:
 	PYTHONPATH=services/safety $(VENV)/python -m d1_safety
 
+EVAL_PATH := PYTHONPATH="eval:contracts/src:services/scoring:services/ingest/src"
+
 eval-download:
 	mkdir -p data/eval
-	PYTHONPATH=eval $(VENV)/python -m d1_eval download --dest data/eval
+	$(EVAL_PATH) $(VENV)/python -m d1_eval download --dest data/eval
 
 eval-store: eval-download
-	PYTHONPATH=eval $(VENV)/python -m d1_eval store --data data/eval --out data/eval/results.md
+	$(EVAL_PATH) $(VENV)/python -m d1_eval store --data data/eval --out eval/RESULTS.md
 
 # --- services/ingest ----------------------------------------------------------
 # Reference loaders and the on-device monthly change list. Archives are local

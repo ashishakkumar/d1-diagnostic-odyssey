@@ -16,6 +16,7 @@ export interface Pipeline {
   evidence: EvidenceRow[];
   change_events: ChangeEvent[];
   approvals: ApprovalRecord[];
+  report?: Report;
 }
 /**
  * Phenopacket Schema v2 JSON. This contract does not redefine it.
@@ -47,6 +48,10 @@ export interface HpoTermDraft {
   case_id: string;
   hpo_id: string;
   label: string;
+  /**
+   * Plain-language wording for this term. Not a diagnosis.
+   */
+  explanation?: string;
   presence: "present" | "excluded" | "uncertain";
   quote?: string;
   span_start?: number;
@@ -134,6 +139,47 @@ export interface ApprovalRecord {
   decision: "approve" | "reject";
   body_hash: string;
   decided_at: string;
+}
+/**
+ * Catalogue comparison. A probability is valid only together with a reliability curve.
+ *
+ * This interface was referenced by `Pipeline`'s JSON-Schema
+ * via the `definition` "Report".
+ */
+export interface Report {
+  evidence: TermEvidence[];
+  margin: number | null;
+  abstained: boolean;
+  probability?: number;
+  /**
+   * @minItems 2
+   */
+  reliability_curve?: [ReliabilityPoint, ReliabilityPoint, ...ReliabilityPoint[]];
+}
+/**
+ * One accepted term against one cited frequency row.
+ *
+ * This interface was referenced by `Pipeline`'s JSON-Schema
+ * via the `definition` "TermEvidence".
+ */
+export interface TermEvidence {
+  hpo_id: string;
+  relation: "supports" | "does_not_support";
+  source: string;
+  version: string;
+  orphanet_id?: string;
+  lower_ratio?: number;
+  upper_ratio?: number;
+}
+/**
+ * One point on a reliability curve. predicted and observed are both between 0 and 1.
+ *
+ * This interface was referenced by `Pipeline`'s JSON-Schema
+ * via the `definition` "ReliabilityPoint".
+ */
+export interface ReliabilityPoint {
+  predicted: number;
+  observed: number;
 }
 /**
  * What a client may send to the gate. There is no reviewer field.

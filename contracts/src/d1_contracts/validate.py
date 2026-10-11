@@ -7,7 +7,7 @@ from google.protobuf.json_format import ParseDict, ParseError
 from pydantic import BaseModel
 
 from d1_contracts.canonical import canonical_json
-from d1_contracts.generated import Pipeline
+from d1_contracts.generated import Pipeline, Report
 
 
 class ContractError(ValueError):
@@ -40,11 +40,26 @@ def _require_variation(variation: dict[str, Any]) -> None:
         raise ContractError(str(exc)) from exc
 
 
+def _require_report_pair(model: Report) -> None:
+    has_probability = model.probability is not None
+    has_curve = model.reliability_curve is not None
+    if has_probability != has_curve:
+        raise ContractError("a probability is valid only together with a reliability curve")
+
+
+def parse_report(data: dict[str, Any]) -> Report:
+    model = Report.model_validate(data)
+    _require_report_pair(model)
+    return model
+
+
 def parse_pipeline(data: dict[str, Any]) -> Pipeline:
     model = Pipeline.model_validate(data)
     _require_phenopacket(_object(model.case))
     for variant in model.lab_reported_variants:
         _require_variation(_object(variant.variation))
+    if model.report is not None:
+        _require_report_pair(model.report)
     return model
 
 

@@ -8,6 +8,17 @@ import { useState } from "react";
 
 type PendingVariant = VariantFields & { draft_id: string; seen_hash: string };
 
+async function stopText(response: Response): Promise<string> {
+  const payload = (await response.json()) as {
+    detail?: { title?: string; body?: string; footer?: string };
+  };
+  const detail = payload.detail;
+  return (
+    [detail?.title, detail?.body, detail?.footer].filter(Boolean).join(" ") ||
+    "Stop. The words were not saved."
+  );
+}
+
 export default function VariantPage() {
   const params = useParams<{ id: string }>();
   const [pending, setPending] = useState<PendingVariant | null>(null);
@@ -19,6 +30,10 @@ export default function VariantPage() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(fields),
     });
+    if (response.status === 409) {
+      setMessage(await stopText(response));
+      return;
+    }
     if (!response.ok) {
       setMessage("The variant was not saved.");
       return;

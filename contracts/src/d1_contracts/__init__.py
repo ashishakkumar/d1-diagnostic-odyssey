@@ -11,8 +11,11 @@ from d1_contracts.generated import (
     LabReportedVariant,
     PhenopacketCase,
     Pipeline,
+    ReliabilityPoint,
+    Report,
+    TermEvidence,
 )
-from d1_contracts.validate import dump_pipeline, parse_pipeline
+from d1_contracts.validate import dump_pipeline, parse_pipeline, parse_report
 
 __all__ = [
     "AcceptedTerm",
@@ -24,8 +27,12 @@ __all__ = [
     "LabReportedVariant",
     "PhenopacketCase",
     "Pipeline",
+    "ReliabilityPoint",
+    "Report",
+    "TermEvidence",
     "body_hash",
     "canonical_json",
     "dump_pipeline",
     "parse_pipeline",
+    "parse_report",
 ]

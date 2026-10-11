@@ -29,6 +29,7 @@ from d1_eval.harness import (
     parents_from_obo,
     present_hpo_ids,
     rank_diseases,
+    results_document,
     results_markdown,
     run_eval,
     time_split,
@@ -277,6 +278,23 @@ def test_results_table_records_tool_and_data_versions() -> None:
     assert "2/3" in text
     assert "excluded_diseases" in text
     assert "| 2 |" in text or text.count("2") > 0
+
+
+def test_results_document_can_name_the_frequency_scorer_version() -> None:
+    loaded = load_cases(PACKETS)
+    pins = load_pins()
+    result = _run(loaded.cases, TermOverlapScorer(load_catalogue(FIXTURES / "catalogue.json")))
+    note = time_split_note(time_split(loaded.cases, pins.knowledge_cutoff))
+    text = results_document(
+        [("full", result)],
+        pins,
+        note,
+        tool="frequency-bin",
+        tool_version="0.0.1",
+    )
+    assert "frequency-bin" in text
+    assert "0.0.1" in text
+    assert "0.0.0" not in text
 
 
 def test_fixtures_command_prints_how_many_diseases_are_excluded(

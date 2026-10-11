@@ -39,7 +39,8 @@
     "approvals": {
       "type": "array",
       "items": {"$ref": "#/$defs/ApprovalRecord"}
-    }
+    },
+    "report": {"$ref": "#/$defs/Report"}
   },
   "$defs": {
     "PhenopacketCase": {
@@ -73,6 +74,11 @@
         "case_id": {"type": "string", "format": "uuid"},
         "hpo_id": {"type": "string", "pattern": "^HP:[0-9]{7}$"},
         "label": {"type": "string", "minLength": 1},
+        "explanation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plain-language wording for this term. Not a diagnosis."
+        },
         "presence": {"enum": ["present", "excluded", "uncertain"]},
         "quote": {"type": "string"},
         "span_start": {"type": "integer", "minimum": 1},
@@ -162,6 +168,58 @@
         "decision": {"enum": ["approve", "reject"]},
         "body_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "decided_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "TermEvidence": {
+      "title": "TermEvidence",
+      "description": "One accepted term against one cited frequency row.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hpo_id", "relation", "source", "version"],
+      "properties": {
+        "hpo_id": {"type": "string", "pattern": "^HP:[0-9]{7}$"},
+        "relation": {"enum": ["supports", "does_not_support"]},
+        "source": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "orphanet_id": {"type": "string", "minLength": 1},
+        "lower_ratio": {"type": "number"},
+        "upper_ratio": {"type": "number"}
+      }
+    },
+    "ReliabilityPoint": {
+      "title": "ReliabilityPoint",
+      "description": "One point on a reliability curve. predicted and observed are both between 0 and 1.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["predicted", "observed"],
+      "properties": {
+        "predicted": {"type": "number", "minimum": 0, "maximum": 1},
+        "observed": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Catalogue comparison. A probability is valid only together with a reliability curve.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "margin", "abstained"],
+      "dependentRequired": {
+        "probability": ["reliability_curve"],
+        "reliability_curve": ["probability"]
+      },
+      "properties": {
+        "evidence": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/TermEvidence"}
+        },
+        "margin": {"type": ["number", "null"]},
+        "abstained": {"type": "boolean"},
+        "probability": {"type": "number", "minimum": 0, "maximum": 1},
+        "reliability_curve": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/ReliabilityPoint"}
+        }
       }
     },
     "ApprovalRequest": {

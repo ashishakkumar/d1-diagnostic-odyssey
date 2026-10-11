@@ -6,7 +6,7 @@ The safe core is a private notebook for one person: a timeline, HPO terms that p
 
 The experimental track is a separate local container. It can read a VCF and run Exomiser and LIRICAL unchanged, on public or synthetic files only. It is not part of the notebook and it is not for a real user's data unless Ashish later allows that.
 
-This tree is the foundation: one pipeline contract, the Postgres approval gate, and the package skeleton. Notebook screens, scoring, ingest, and the experimental genome engine are not in this tree.
+This tree is the safe core: the pipeline contract, the Postgres approval gate, the notebook, the catalogue scorer, the sentence scanner, and the local reference watcher. The experimental genome engine is not in this tree.
 
 Real records stay on the person's own computer. A hosted database is for synthetic cases only. This foundation does not send text to a model.
 
@@ -17,10 +17,19 @@ make setup
 make db-up
 make db-reset
 make lint
+make safety-scan
 make test
+make eval-store
+make ingest-replay
 ```
 
 `make setup` creates a virtualenv, installs the Python and TypeScript packages, and generates types from `contracts/pipeline.schema.json`.
+
+`make safety-scan` checks the fixed sentences and the country footers.
+
+`make eval-store` downloads the pinned public files and writes `eval/RESULTS.md`. The frequency-bin rows are the catalogue scorer. The term-overlap rows are the stand-in, kept for comparison.
+
+`make ingest-replay` replays local reference archives into a change list. It does not send a variant anywhere.
 
 `make db-up` starts Postgres. It uses `compose.yaml` when Docker is available, and a local PostgreSQL 16 cluster otherwise.
 

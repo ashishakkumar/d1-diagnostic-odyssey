@@ -7,7 +7,15 @@ from datetime import date
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, conint, constr
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    confloat,
+    conint,
+    constr,
+)
 
 
 class PhenopacketMeta(BaseModel):
@@ -29,6 +37,9 @@ class HpoTermDraft(BaseModel):
     case_id: UUID
     hpo_id: constr(pattern=r"^HP:[0-9]{7}$")
     label: constr(min_length=1)
+    explanation: constr(min_length=1) | None = Field(
+        None, description="Plain-language wording for this term. Not a diagnosis."
+    )
     presence: Literal["present", "excluded", "uncertain"]
     quote: str | None = None
     span_start: conint(ge=1) | None = None
@@ -110,6 +121,50 @@ class ApprovalRecord(BaseModel):
     decided_at: AwareDatetime
 
 
+class TermEvidence(BaseModel):
+    """
+    One accepted term against one cited frequency row.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    hpo_id: constr(pattern=r"^HP:[0-9]{7}$")
+    relation: Literal["supports", "does_not_support"]
+    source: constr(min_length=1)
+    version: constr(min_length=1)
+    orphanet_id: constr(min_length=1) | None = None
+    lower_ratio: float | None = None
+    upper_ratio: float | None = None
+
+
+class ReliabilityPoint(BaseModel):
+    """
+    One point on a reliability curve. predicted and observed are both between 0 and 1.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    predicted: confloat(ge=0.0, le=1.0)
+    observed: confloat(ge=0.0, le=1.0)
+
+
+class Report(BaseModel):
+    """
+    Catalogue comparison. A probability is valid only together with a reliability curve.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    evidence: list[TermEvidence]
+    margin: float | None
+    abstained: bool
+    probability: confloat(ge=0.0, le=1.0) | None = None
+    reliability_curve: list[ReliabilityPoint] | None = Field(None, min_length=2)
+
+
 class ApprovalRequest(BaseModel):
     """
     What a client may send to the gate. There is no reviewer field.
@@ -169,3 +224,4 @@ class Pipeline(BaseModel):
     evidence: list[EvidenceRow]
     change_events: list[ChangeEvent]
     approvals: list[ApprovalRecord]
+    report: Report | None = None

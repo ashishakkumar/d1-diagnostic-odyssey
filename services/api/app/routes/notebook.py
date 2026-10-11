@@ -6,13 +6,14 @@ from uuid import UUID, uuid4
 
 import phenopackets.schema.v2 as pps2
 import psycopg
+from d1_safety.render import SafetyError
 from fastapi import FastAPI, HTTPException, Request, Response
 from google.protobuf.json_format import ParseDict, ParseError
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, constr
 
-from app.routes.ports import lay_wording
-from app.routes.summary import accepted_rows, summary_text, text_to_pdf
+from app.routes.ports import country_footer, lay_wording, red_flag, report_for, scan_notebook_text
+from app.routes.summary import accepted_rows, pdf_text, summary_text, text_to_pdf
 from app.session import apply_decision, bind_reviewer
 from d1_contracts import ApprovalRequest, HpoTermDraft, LabReportedVariant
 
@@ -59,8 +60,15 @@ def _reviewer(request: Request) -> str:
     return reviewer
 
 
+def _stopped(text: str) -> None:
+    screen = red_flag(text)
+    if screen is not None:
+        raise HTTPException(status_code=409, detail=screen)
+
+
 def _term_payload(draft_id: str, seen_hash: str, body: dict) -> dict[str, str]:
-    plain, explanation = lay_wording(str(body["hpo_id"]), str(body["label"]))
+    plain, fallback = lay_wording(str(body["hpo_id"]), str(body["label"]))
+    explanation = str(body["explanation"]) if body.get("explanation") else fallback
     return {
         "draft_id": draft_id,
         "seen_hash": seen_hash,
@@ -93,8 +101,23 @@ def create_app() -> FastAPI:
         response.set_cookie(SESSION_COOKIE, name, httponly=True, samesite="lax", path="/")
         return {"name": name}
 
+    @app.get("/footer")
+    def footer() -> dict[str, str]:
+        return {"text": country_footer()}
+
+    @app.get("/cases/{case_id}/report")
+    def case_report(case_id: UUID) -> dict:
+        accepted = [
+            (str(body["hpo_id"]), str(body["presence"]))
+            for _at, kind, body in accepted_rows(case_id)
+            if kind == "hpo_term" and body.get("hpo_id") and body.get("presence")
+        ]
+        return report_for(accepted)
+
     @app.post("/cases/{case_id}/term-drafts")
     def create_term_draft(case_id: UUID, body: TermDraftBody) -> dict[str, str]:
+        _plain, explanation = lay_wording(str(body.hpo_id), str(body.label))
+        _stopped(f"{body.label}\n{explanation}")
         draft_id = uuid4()
         draft = HpoTermDraft(
             id=draft_id,
@@ -102,6 +125,7 @@ def create_app() -> FastAPI:
             hpo_id=body.hpo_id,
             label=body.label,
             presence=body.presence,
+            explanation=explanation,
         )
         stored = draft.model_dump(mode="json", exclude_none=True)
         with psycopg.connect(DATABASE_URL) as connection:
@@ -158,6 +182,7 @@ def create_app() -> FastAPI:
 
     @app.post("/cases/{case_id}/variants")
     def create_variant(case_id: UUID, body: VariantBody) -> dict[str, str]:
+        _stopped(str(body.lab_words))
         draft_id = uuid4()
         draft = LabReportedVariant(
             id=draft_id,
@@ -199,11 +224,21 @@ def create_app() -> FastAPI:
 
     @app.get("/cases/{case_id}/summary")
     def summary(case_id: UUID) -> Response:
-        return Response(content=summary_text(case_id), media_type="text/plain; charset=utf-8")
+        try:
+            text = summary_text(case_id)
+        except SafetyError as exc:
+            raise HTTPException(status_code=422, detail="the page failed the scan") from exc
+        return Response(content=text, media_type="text/plain; charset=utf-8")
 
     @app.get("/cases/{case_id}/summary.pdf")
     def summary_pdf(case_id: UUID) -> Response:
-        return Response(content=text_to_pdf(summary_text(case_id)), media_type="application/pdf")
+        try:
+            text = summary_text(case_id)
+            pdf = text_to_pdf(text)
+            scan_notebook_text(pdf_text(pdf))
+        except SafetyError as exc:
+            raise HTTPException(status_code=422, detail="the page failed the scan") from exc
+        return Response(content=pdf, media_type="application/pdf")
 
     @app.post("/cases/{case_id}/approvals")
     def approve(case_id: UUID, body: ApprovalRequest, request: Request) -> dict[str, str]:

@@ -7,4 +7,5 @@ export type {
   HpoTermDraft,
   LabReportedVariant,
   Pipeline,
+  Report,
 } from "../../../contracts/ts/src/generated.ts";

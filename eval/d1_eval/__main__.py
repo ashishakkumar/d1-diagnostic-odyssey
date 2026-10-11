@@ -7,7 +7,10 @@ import hashlib
 import urllib.request
 from pathlib import Path
 
+from d1_eval.frequency import FrequencyBinScorer, frequency_table
 from d1_eval.harness import (
+    Pins,
+    StoreLoad,
     TermOverlapScorer,
     check_store_file,
     count_terms,
@@ -99,6 +102,7 @@ def _download(dest: Path) -> int:
     check_store_file(dest / "all_phenopackets.zip", pins)
     _fetch(pins.mondo_url, dest / "mondo_nodes.tsv")
     _fetch(pins.hpo_url, dest / "hp.obo")
+    _fetch_orphanet(dest, pins.orphanet_url, pins.orphanet_fallback_url)
     print(f"downloaded {dest}")
     return 0
 
@@ -143,7 +147,18 @@ def _store(data: Path, out: Path) -> int:
                 )
             )
         rows.append((level, summarize(ranked, excluded, pins.ks)))
-    text = results_document(rows, pins, note, tool="term-overlap-loo")
+    standin = results_document(rows, pins, note, tool="term-overlap-loo")
+    frequency_text, frequency_status = _frequency_rows(
+        loaded,
+        mapping,
+        unique,
+        excluded,
+        parents,
+        pins,
+        data / "en_product4.xml",
+        data / "orphanet-error.txt",
+    )
+    text = frequency_text + "\n" + standin
     text += "\n" + f"mondo_sha256: {_sha256(data / 'mondo_nodes.tsv')}\n"
     text += f"hpo_version: {pins.hpo_version}\n"
     if parents:
@@ -151,6 +166,7 @@ def _store(data: Path, out: Path) -> int:
     else:
         text += "hpo parent map was not loaded, so vaguer left the terms as they were.\n"
     text += f"packets_skipped: {loaded.skipped}\n"
+    text += f"orphanet: {frequency_status}\n"
     out.write_text(text)
     full = rows[0][1]
     print(f"excluded_diseases={excluded}")
@@ -161,13 +177,91 @@ def _store(data: Path, out: Path) -> int:
     print(f"top3={full.hits[3]}/{full.packets_scored}")
     print(f"top10={full.hits[10]}/{full.packets_scored}")
     print(f"no_confident={full.no_confident}/{full.packets_scored}")
+    print(f"orphanet={frequency_status}")
     return 0
+
+
+def _frequency_rows(
+    loaded: StoreLoad,
+    mapping: dict[str, set[str]],
+    unique: set[str],
+    excluded: int,
+    parents: dict[str, tuple[str, str]],
+    pins: Pins,
+    xml_path: Path,
+    error_path: Path,
+) -> tuple[str, str]:
+    note = (
+        "Frequency-bin rows use the catalogue scorer on Orphanet phenotype frequencies. "
+        "Abstentions are misses. The scorer thresholds were not changed for this run."
+    )
+    if not xml_path.is_file():
+        reason = (
+            error_path.read_text().strip() if error_path.is_file() else "en_product4.xml is missing"
+        )
+        return f"Frequency-bin scorer did not run: {reason}\n", reason
+    try:
+        kept = {disease: mapping[disease] for disease in unique}
+        freq_rows, orpha_to_disease = frequency_table(xml_path, kept)
+        scorer = FrequencyBinScorer(freq_rows, orpha_to_disease)
+        ranked_rows = []
+        for level in LEVELS:
+            print(f"frequency level={level}", flush=True)
+            ranked = [
+                rank_case(
+                    degrade(case, level, parents, pins.keep_fraction),
+                    scorer,
+                    unique,
+                    pins.tied_at_best,
+                )
+                for case in loaded.cases
+            ]
+            ranked_rows.append((level, summarize(ranked, excluded, pins.ks)))
+        status = f"{pins.orphanet_version} sha256 {_sha256(xml_path)} rows {len(freq_rows)}"
+        return (
+            results_document(
+                ranked_rows,
+                pins,
+                note,
+                tool="frequency-bin",
+                tool_version="0.0.1",
+            ),
+            status,
+        )
+    except Exception as exc:
+        reason = f"{type(exc).__name__}: {exc}"
+        return f"Frequency-bin scorer did not run: {reason}\n", reason
+
+
+def _fetch_orphanet(dest: Path, url: str, fallback: str) -> None:
+    target = dest / "en_product4.xml"
+    error_path = dest / "orphanet-error.txt"
+    if target.is_file() and target.stat().st_size > 0:
+        return
+    errors: list[str] = []
+    for candidate in (url, fallback):
+        if not candidate:
+            continue
+        try:
+            _fetch(candidate, target)
+        except Exception as exc:
+            errors.append(f"{candidate}: {type(exc).__name__}: {exc}")
+            continue
+        if error_path.exists():
+            error_path.unlink()
+        return
+    error_path.write_text("\n".join(errors) + "\n")
 
 
 def _fetch(url: str, dest: Path) -> None:
     if dest.exists() and dest.stat().st_size > 0:
         return
-    urllib.request.urlretrieve(url, dest)
+    try:
+        urllib.request.urlretrieve(url, dest)
+    except Exception:
+        if dest.exists():
+            dest.unlink()
+        raise
 
 
 def _sha256(path: Path) -> str:

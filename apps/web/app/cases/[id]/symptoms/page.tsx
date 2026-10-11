@@ -60,6 +60,17 @@ export default function SymptomsPage() {
             headers: { "content-type": "application/json" },
             body: JSON.stringify(SYNTHETIC_TERM),
           });
+          if (response.status === 409) {
+            const payload = (await response.json()) as {
+              detail?: { title?: string; body?: string; footer?: string };
+            };
+            const detail = payload.detail;
+            setMessage(
+              [detail?.title, detail?.body, detail?.footer].filter(Boolean).join(" ") ||
+                "Stop. The words were not saved.",
+            );
+            return;
+          }
           if (!response.ok) {
             setMessage("The synthetic term was not saved.");
             return;

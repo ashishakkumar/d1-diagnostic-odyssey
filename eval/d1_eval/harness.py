@@ -58,6 +58,9 @@ class Pins:
     knowledge_cutoff: date
     tool_name: str
     tool_version: str
+    orphanet_version: str
+    orphanet_url: str
+    orphanet_fallback_url: str
 
 
 @dataclass(frozen=True)
@@ -143,6 +146,7 @@ def load_pins(path: Path = PIN_PATH) -> Pins:
     hpo = raw["hpo"]
     metric = raw["metric"]
     tool = raw["tool"]
+    orphanet = raw.get("orphanet", {})
     return Pins(
         store_version=store["version"],
         store_bytes=int(store["bytes"]),
@@ -159,6 +163,9 @@ def load_pins(path: Path = PIN_PATH) -> Pins:
         knowledge_cutoff=date.fromisoformat(metric["knowledge_cutoff"]),
         tool_name=tool["name"],
         tool_version=tool["version"],
+        orphanet_version=str(orphanet.get("version", "")),
+        orphanet_url=str(orphanet.get("url", "")),
+        orphanet_fallback_url=str(orphanet.get("fallback_url", "")),
     )
 
 
@@ -485,8 +492,10 @@ def results_document(
     pins: Pins,
     note: str,
     tool: str | None = None,
+    tool_version: str | None = None,
 ) -> str:
     name = tool or pins.tool_name
+    version = pins.tool_version if tool_version is None else tool_version
     lines = [
         "# Public-case method results",
         "",
@@ -506,7 +515,7 @@ def results_document(
                 [
                     level,
                     name,
-                    pins.tool_version,
+                    version,
                     pins.store_version,
                     pins.store_sha256,
                     pins.mondo_version,

@@ -24,6 +24,11 @@ tied_at_best = 10
 keep_fraction = 0.5
 knowledge_cutoff = "2026-06-23"
 
+[orphanet]
+version = "en_product4"
+url = "https://www.orphadata.com/data/xml/en_product4.xml"
+fallback_url = "http://www.orphadata.org/data/xml/en_product4.xml"
+
 [tool]
 name = "term-overlap"
 version = "0.0.0"
