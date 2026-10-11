@@ -141,7 +141,7 @@ export interface ApprovalRecord {
   decided_at: string;
 }
 /**
- * Catalogue comparison. A probability is valid only together with a reliability curve.
+ * Catalogue comparison or tool ranks. A probability needs a reliability curve.
  *
  * This interface was referenced by `Pipeline`'s JSON-Schema
  * via the `definition` "Report".
@@ -151,6 +151,14 @@ export interface Report {
   margin: number | null;
   margin_fact?: string;
   abstained: boolean;
+  /**
+   * Experimental mark. It is not a diagnosis.
+   */
+  grade?: "research-grade, unverified, confirm in a clinical lab";
+  /**
+   * Tool ranks. score is the tool's own number, not a probability.
+   */
+  ranks?: ToolRank[];
   probability?: number;
   /**
    * @minItems 2
@@ -172,6 +180,20 @@ export interface TermEvidence {
   lower_ratio?: number;
   upper_ratio?: number;
   background?: number;
+}
+/**
+ * One upstream-tool row. score is that tool's number, not a probability.
+ *
+ * This interface was referenced by `Pipeline`'s JSON-Schema
+ * via the `definition` "ToolRank".
+ */
+export interface ToolRank {
+  kind: "gene" | "disease";
+  label: string;
+  tool: "exomiser" | "lirical";
+  tool_version: string;
+  score: number;
+  score_name: string;
 }
 /**
  * One point on a reliability curve. predicted and observed are both between 0 and 1.

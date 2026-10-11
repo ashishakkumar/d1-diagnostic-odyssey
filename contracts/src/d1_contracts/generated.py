@@ -151,9 +151,25 @@ class ReliabilityPoint(BaseModel):
     observed: confloat(ge=0.0, le=1.0)
 
 
+class ToolRank(BaseModel):
+    """
+    One upstream-tool row. score is that tool's number, not a probability.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    kind: Literal["gene", "disease"]
+    label: constr(min_length=1)
+    tool: Literal["exomiser", "lirical"]
+    tool_version: constr(min_length=1)
+    score: float
+    score_name: constr(min_length=1)
+
+
 class Report(BaseModel):
     """
-    Catalogue comparison. A probability is valid only together with a reliability curve.
+    Catalogue comparison or tool ranks. A probability needs a reliability curve.
     """
 
     model_config = ConfigDict(
@@ -163,6 +179,13 @@ class Report(BaseModel):
     margin: float | None
     margin_fact: constr(min_length=1) | None = None
     abstained: bool
+    grade: Literal["research-grade, unverified, confirm in a clinical lab"] | None = Field(
+        None, description="Experimental mark. It is not a diagnosis."
+    )
+    ranks: list[ToolRank] | None = Field(
+        None,
+        description="Tool ranks. score is the tool's own number, not a probability.",
+    )
     probability: confloat(ge=0.0, le=1.0) | None = None
     reliability_curve: list[ReliabilityPoint] | None = Field(None, min_length=2)
 

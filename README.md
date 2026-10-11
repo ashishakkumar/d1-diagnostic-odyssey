@@ -6,7 +6,7 @@ The safe core is a private notebook for one person: a timeline, HPO terms that p
 
 The experimental track is a separate local container. It can read a VCF and run Exomiser and LIRICAL unchanged, on public or synthetic files only. It is not part of the notebook and it is not for a real user's data unless Ashish later allows that.
 
-This tree is the safe core: the pipeline contract, the Postgres approval gate, the notebook, the catalogue scorer, the sentence scanner, and the local reference watcher. The experimental genome engine is not in this tree.
+This tree is the safe core: the pipeline contract, the Postgres approval gate, the notebook, the catalogue scorer, the sentence scanner, and the local reference watcher. The experimental engine is `engine/` and `compose.experimental.yaml`. The notebook does not import it and has no route to it. It is not for a real person's data.
 
 Real records stay on the person's own computer. A hosted database is for synthetic cases only. This foundation does not send text to a model.
 

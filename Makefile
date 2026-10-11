@@ -3,7 +3,7 @@ export DATABASE_URL
 
 VENV := .venv/bin
 
-.PHONY: setup lint test db-up db-reset generate safety-scan eval-download eval-store ingest-replay
+.PHONY: setup lint test db-up db-reset generate safety-scan eval-download eval-store ingest-replay experimental
 
 setup:
 	python3 -m venv .venv
@@ -45,8 +45,8 @@ db-reset: db-up
 	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f db/002_gate.sql
 
 lint:
-	$(VENV)/ruff check contracts services tests eval
-	$(VENV)/ruff format --check contracts services tests eval
+	$(VENV)/ruff check contracts services tests eval engine/src
+	$(VENV)/ruff format --check contracts services tests eval engine/src
 	npm --prefix contracts/ts run lint
 	npm --prefix apps/web run lint
 
@@ -75,3 +75,9 @@ INGEST_OUT ?= services/ingest/change-list-size.tsv
 ingest-replay:
 	PYTHONPATH="services/ingest/src:contracts/src" $(VENV)/python -m d1_ingest.replay \
 		--out "$(INGEST_OUT)" $(INGEST_ARCHIVES)
+
+# Separate compose file. Refuses unless the gitignored acknowledgement and D1_TRACK are present.
+experimental:
+	@test -f engine/ACKNOWLEDGEMENT || { echo "engine/ACKNOWLEDGEMENT is missing"; exit 1; }
+	@test "$$D1_TRACK" = experimental-local || { echo "D1_TRACK must be experimental-local"; exit 1; }
+	docker compose -f compose.experimental.yaml up --build

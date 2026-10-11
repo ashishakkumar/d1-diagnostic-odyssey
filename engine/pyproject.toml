@@ -1,0 +1,18 @@
+[project]
+name = "d1-engine"
+version = "0.0.1"
+description = "Experimental research engine. Not part of the patient notebook."
+requires-python = ">=3.12"
+dependencies = [
+  "d1-contracts",
+  "d1-safety",
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

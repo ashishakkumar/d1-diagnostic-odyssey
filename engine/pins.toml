@@ -1,0 +1,26 @@
+# Versions checked against the GitHub releases API on 11 October 2026.
+# The zip files were not downloaded here, so these digests were not recomputed locally.
+
+[exomiser]
+version = "15.1.0"
+tag = "15.1.0"
+published = "2026-06-09T11:32:00Z"
+asset = "exomiser-cli-15.1.0-distribution.zip"
+bytes = 170449958
+sha256 = "47faa54d4791686c9dc3f896762834630e9eaf607ad3cf3399074353c3dda248"
+url = "https://github.com/exomiser/Exomiser/releases/download/15.1.0/exomiser-cli-15.1.0-distribution.zip"
+java = "21"
+
+[lirical]
+version = "2.4.1"
+tag = "v2.4.1"
+published = "2026-06-18T19:07:59Z"
+asset = "lirical-cli-2.4.1-distribution.zip"
+bytes = 32866100
+sha256 = "445cd4975e46e6656b5ae2c04785548bbb4c434664c0423332d09bdffeb32248"
+url = "https://github.com/TheJacksonLaboratory/LIRICAL/releases/download/v2.4.1/lirical-cli-2.4.1-distribution.zip"
+
+[exomiser_data]
+version = "2602"
+# Named on the install page. Compatibility with CLI 15.1.0 was not listed in discussion 640.
+status = "UNCLEAR"

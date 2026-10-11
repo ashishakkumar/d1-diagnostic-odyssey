@@ -198,9 +198,24 @@
         "observed": {"type": "number", "minimum": 0, "maximum": 1}
       }
     },
+    "ToolRank": {
+      "title": "ToolRank",
+      "description": "One upstream-tool row. score is that tool's number, not a probability.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label", "tool", "tool_version", "score", "score_name"],
+      "properties": {
+        "kind": {"enum": ["gene", "disease"]},
+        "label": {"type": "string", "minLength": 1},
+        "tool": {"enum": ["exomiser", "lirical"]},
+        "tool_version": {"type": "string", "minLength": 1},
+        "score": {"type": "number"},
+        "score_name": {"type": "string", "minLength": 1}
+      }
+    },
     "Report": {
       "title": "Report",
-      "description": "Catalogue comparison. A probability is valid only together with a reliability curve.",
+      "description": "Catalogue comparison or tool ranks. A probability needs a reliability curve.",
       "type": "object",
       "additionalProperties": false,
       "required": ["evidence", "margin", "abstained"],
@@ -216,6 +231,16 @@
         "margin": {"type": ["number", "null"]},
         "margin_fact": {"type": "string", "minLength": 1},
         "abstained": {"type": "boolean"},
+        "grade": {
+          "description": "Experimental mark. It is not a diagnosis.",
+          "type": "string",
+          "enum": ["research-grade, unverified, confirm in a clinical lab"]
+        },
+        "ranks": {
+          "description": "Tool ranks. score is the tool's own number, not a probability.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/ToolRank"}
+        },
         "probability": {"type": "number", "minimum": 0, "maximum": 1},
         "reliability_curve": {
           "type": "array",

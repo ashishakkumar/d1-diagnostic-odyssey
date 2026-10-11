@@ -1,0 +1,18 @@
+# Experimental engine. Not merged into compose.yaml. The notebook does not start it.
+services:
+  engine:
+    build:
+      context: .
+      dockerfile: engine/Dockerfile
+    network_mode: "none"
+    environment:
+      D1_TRACK: ${D1_TRACK:-}
+      D1_BIND: 127.0.0.1
+      D1_BUILD: ${D1_BUILD:-hosted}
+      D1_ACK: /run/ACKNOWLEDGEMENT
+    volumes:
+      - ./data/exomiser:/data/exomiser:ro
+      - ./data/lirical:/data/lirical:ro
+      - ./data/engine-input:/input:ro
+      - ./data/engine-output:/output
+      - ./engine/ACKNOWLEDGEMENT:/run/ACKNOWLEDGEMENT:ro
