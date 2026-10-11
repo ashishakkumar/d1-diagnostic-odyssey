@@ -7,7 +7,7 @@ from pathlib import Path
 from d1_ingest.load import load_orphadata_phenotypes
 
 from d1_eval.harness import DiseaseScore
-from scoring import catalogue_score, to_public
+from scoring.catalogue import prepare_catalogue, rank_products
 
 # "very frequent" is checked before "frequent", and "very rare" before any shorter label.
 _BIN_PREFIXES = (
@@ -82,20 +82,20 @@ class FrequencyBinScorer:
         self._rows = list(rows)
         self._orpha_to_disease = dict(orpha_to_disease)
         self._parents = dict(parents or {})
+        self._prepared = prepare_catalogue(self._rows)
 
     def score(self, hpo_ids: Sequence[str]) -> list[DiseaseScore]:
-        report = catalogue_score(
+        ranked, confident = rank_products(
             [(hpo_id, "present") for hpo_id in hpo_ids],
-            self._rows,
+            self._prepared,
             self._parents,
         )
-        public = to_public(report)
-        if not public["evidence"]["confident"]:
+        if not confident:
             return []
         found: list[DiseaseScore] = []
-        for disease in report.diseases:
-            disease_id = self._orpha_to_disease.get(disease.orphanet_id)
+        for product in ranked:
+            disease_id = self._orpha_to_disease.get(product.orphanet_id)
             if disease_id is None:
                 continue
-            found.append(DiseaseScore(disease_id, disease.lower_ratio))
+            found.append(DiseaseScore(disease_id, product.lower_ratio))
         return found

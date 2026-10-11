@@ -4,6 +4,10 @@ For research use only. Not for use in diagnostic procedures.
 
 This notebook is a synthetic case file. It does not diagnose. `make demo` resets the local database and opens the five cases at <http://127.0.0.1:3000>.
 
+Pull request #9 is the finish PR for the whole app. Its base is `main`. It is not a draft. The head branch is `cursor/finish-odyssey-demo-79af`.
+
+The multi-omics slice is the opt-in allele-frequency prior in `services/api/app/data/allele_frequencies.json` (`NM_000138.5:c.1A>G`, 0.00012, source `fixture-allele-frequency`). It is experimental and non-diagnostic. This build did not call gnomAD or ClinVar. The prior does not change the catalogue comparison. No model is used for it.
+
 ## What a person can run
 
 Sign in with any name, then load one of the five synthetic cases. Each load still goes through `app.apply_decision`. The summary shows a cited catalogue comparison, plain-language wording for the terms, and the India footer (emergency number 112, from `templates/red_flags/default.txt`). One case abstains. The lab-variant page has a warning-sign button. That button posts "Unconsciousness." and the API returns 409 with the stop screen. The draft is not saved. A checkbox on the summary turns on an experimental population-frequency prior from `services/api/app/data/allele_frequencies.json` (`NM_000138.5:c.1A>G`, allele frequency 0.00012). The prior does not change the catalogue comparison, and the limits text says this build did not call gnomAD or ClinVar.
@@ -30,7 +34,24 @@ Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions, and hel
 
 An ancestor climb was measured only on the 0.0.1 flat background. Full-set top-1 fell from 1292/4815 to 841/4815. That climb was not rerun on 0.0.2, so 841/4815 is not a 0.0.2 result. The notebook and `d1_eval store` do not pass a parent map. The function remains for a caller that passes parents.
 
-NOT MEASURED / pending: the degree baseline, and precision@k at k = 1 and k = 5. `PLAN.md` asks the catalogue to beat that baseline on both percentage@k and precision@k over the 249 unique-map diseases. Those bars are not a pass. A unit test checks that one decoy gene does not change a disease rank. A store-scale decoy-gene evaluation is NOT MEASURED / pending. No store job was running on this pass, and the measured 1395/4815 rows above were not replaced.
+Degree baseline and precision@k were measured on this pass for the shipped frequency-bin 0.0.2 scorer. No parent map. `CLOSE_DISEASE_COUNT` and `CLOSE_FACTOR` were not refit. The held-out split was not used to choose a threshold. Packet top-1 stayed 1395/4815, train 1129/3890, test 266/925, which matches the earlier store run. The full table is [../eval/bars-0.0.2.md](../eval/bars-0.0.2.md) and the same section at the top of `eval/RESULTS.md`.
+
+| cohort | k | frequency-bin | degree baseline |
+| --- | --- | --- | --- |
+| all 4815 packets | 1 | 1395/4815 (0.289720) | 1647/4815 (0.342056) |
+| all 4815 packets | 5 | 1871/4815 (0.388577), precision@5 0.077715 | 2665/4815 (0.553479), precision@5 0.110696 |
+| test 925 packets | 1 | 266/925 (0.287568) | 327/925 (0.353514) |
+| test 925 packets | 5 | 370/925 (0.400000), precision@5 0.080000 | 533/925 (0.576216), precision@5 0.115243 |
+| 249 diseases, unweighted mean | 1 | percentage 0.353135, precision 0.353135 | percentage 0.355850, precision 0.355850 |
+| 249 diseases, unweighted mean | 5 | percentage 0.457476, precision 0.091495 | percentage 0.536436, precision 0.107287 |
+
+precision@k is the mean of 1/k on a hit and 0 on a miss, so precision@1 equals percentage@1. The denominator stays k when the list is shorter than k. Abstentions are misses. Ties take the worst rank. Frequency-bin does not beat the degree baseline on percentage@k or precision@k at k = 1 or k = 5. That pass bar is not met. A store-scale decoy-gene evaluation is NOT MEASURED / pending.
+
+## Measured on this revision
+
+- `make test`: 229 passed, 1 skipped. The skipped test is the opt-in live model smoke. It was not run. The OpenAPI drift tests passed in this run. Gemini-to-OpenRouter `:free` coverage is the stubbed 429 tests only.
+- Cold `make e2e`: 1 passed (10.8s).
+- `d1_eval bars`: exit 0. Frequency-bin packet top-1 1395/4815. It does not beat the degree baseline.
 
 ## Contract, prior, and model client
 

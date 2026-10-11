@@ -14,11 +14,26 @@ Term-overlap-loo full-set top-1 is 3806/4815, with 104/4815 abstentions. It is h
 
 An ancestor climb (depth 8, stop at HP:0000001 and HP:0000118) was measured on the older flat background of 0.05. Full-set top-1 fell from 1292/4815 to 841/4815. That climb was not rerun on the corpus background, so 841/4815 is not a 0.0.2 result. The notebook and `d1_eval store` do not pass a parent map. The function remains for a caller that passes parents. Thresholds were not refit on a training split or on the held-out split.
 
-## NOT MEASURED / pending
+## Degree baseline and precision@k
 
-`PLAN.md` requires the catalogue comparison to beat a degree baseline at k = 1 and k = 5 on both percentage@k and precision@k, with percentage@k over the 249 unique-map diseases. The degree baseline is NOT MEASURED / pending. precision@k at k = 1 and k = 5 is NOT MEASURED / pending. Those bars are not a pass.
+Measured on the shipped frequency-bin 0.0.2 scorer. No parent map. Thresholds were not refit. The held-out split was not used to choose a threshold. Full tables are in [../eval/bars-0.0.2.md](../eval/bars-0.0.2.md).
 
-A decoy gene does not change the disease rank in `tests/eval/test_harness.py`. A store-scale decoy-gene evaluation is NOT MEASURED / pending.
+Packet denominator is the 4815 unique-map packets. Abstentions are misses. The 249-disease rows are the unweighted mean of each disease's packet rate. Every unique-map disease had at least one packet. precision@k uses denominator k, including when the list is shorter than k. Ties take the worst rank.
+
+| cohort | k | frequency-bin hits | degree-baseline hits | frequency percentage@k | degree percentage@k | frequency precision@k | degree precision@k |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| all packets | 1 | 1395/4815 | 1647/4815 | 0.289720 | 0.342056 | 0.289720 | 0.342056 |
+| all packets | 5 | 1871/4815 | 2665/4815 | 0.388577 | 0.553479 | 0.077715 | 0.110696 |
+| train packets | 1 | 1129/3890 | 1320/3890 | 0.290231 | 0.339332 | 0.290231 | 0.339332 |
+| train packets | 5 | 1501/3890 | 2132/3890 | 0.385861 | 0.548072 | 0.077172 | 0.109614 |
+| test packets | 1 | 266/925 | 327/925 | 0.287568 | 0.353514 | 0.287568 | 0.353514 |
+| test packets | 5 | 370/925 | 533/925 | 0.400000 | 0.576216 | 0.080000 | 0.115243 |
+| 249 diseases | 1 | mean of packet rates | mean of packet rates | 0.353135 | 0.355850 | 0.353135 | 0.355850 |
+| 249 diseases | 5 | mean of packet rates | mean of packet rates | 0.457476 | 0.536436 | 0.091495 | 0.107287 |
+
+Frequency-bin does not beat the degree baseline on percentage@k or precision@k at k = 1 or k = 5, on all packets, on the held-out test packets, or on the 249-disease mean. That pass bar is not met. Thresholds were not changed after this measurement.
+
+A store-scale decoy-gene evaluation is NOT MEASURED / pending. A unit test checks one synthetic decoy.
 
 ## 0.0.1, kept for comparison
 

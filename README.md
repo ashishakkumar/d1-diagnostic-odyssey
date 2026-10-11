@@ -41,7 +41,7 @@ A hosted model is not on the notebook path. `complete_with_gemini` calls Gemini 
 
 `make safety-scan` checks the fixed sentences and the country footers.
 
-`make eval-store` downloads the pinned public files and writes `eval/RESULTS.md`. The shipped scorer is frequency-bin 0.0.2: the bin bound divided by a leave-one-out rate `(k + 1) / (n + 2)` from Orphadata Science `en_product4`, including disorders that are not ranked. A missing row has ratio 1. Abstention stays at 10 diseases within a factor of 2. Those constants were not refit. The command prints frequency-bin totals and a line labeled `term-overlap-loo`. That stand-in reads labels from other packets in the same release, so it is not shipped. The degree baseline and precision@k at k = 1 and k = 5 are not computed. `docs/scorer-0.0.2.md` records the measurement.
+`make eval-store` downloads the pinned public files and writes `eval/RESULTS.md`. The shipped scorer is frequency-bin 0.0.2: the bin bound divided by a leave-one-out rate `(k + 1) / (n + 2)` from Orphadata Science `en_product4`, including disorders that are not ranked. A missing row has ratio 1. Abstention stays at 10 diseases within a factor of 2. Those constants were not refit. The command prints frequency-bin totals and a line labeled `term-overlap-loo`. That stand-in reads labels from other packets in the same release, so it is not shipped. `python -m d1_eval bars` writes degree baseline and precision@k at k = 1 and k = 5 to `eval/bars-0.0.2.md`. On this measurement frequency-bin does not beat that baseline. `docs/scorer-0.0.2.md` records the numbers.
 
 `make ingest-replay` replays local reference archives into a change list. It does not send a variant anywhere.
 

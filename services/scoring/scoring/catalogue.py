@@ -3,7 +3,7 @@
 import math
 from collections import defaultdict
 from pathlib import Path
-from typing import Literal, Mapping, Sequence
+from typing import Literal, Mapping, NamedTuple, Sequence
 
 import phenopackets.schema.v2 as pps2
 import pronto
@@ -378,6 +378,52 @@ def _prepare(rows: Sequence[Mapping]) -> tuple:
     return grouped, scoreable, excluded, n_diseases, positive
 
 
+def prepare_catalogue(rows: Sequence[Mapping]) -> tuple:
+    """Partition and corpus rates for one unchanged table."""
+    return _prepare(rows)
+
+
+class _Product(NamedTuple):
+    orphanet_id: str
+    lower_ratio: float
+    upper_ratio: float
+
+
+def rank_products(
+    accepted_hpo: Sequence[tuple[str, Presence]],
+    prepared: tuple,
+    parents: Mapping[str, str] | None = None,
+) -> tuple[list[_Product], bool]:
+    """Lower and upper products, and the same confident flag as catalogue_score.
+
+    This does not build term evidence. Callers that need citations use catalogue_score.
+    """
+    grouped, scoreable, _excluded, n_diseases, positive = prepared
+    diseases: list[_Product] = []
+    for orphanet_id in sorted(scoreable):
+        disease_rows = grouped[orphanet_id]
+        by_hpo = {str(row["hpo_id"]): row for row in disease_rows}
+        lower = 1.0
+        upper = 1.0
+        for hpo_id, presence in accepted_hpo:
+            row = _annotated_row(by_hpo, hpo_id, parents)
+            if row is None:
+                lower_ratio = 1.0
+                upper_ratio = 1.0
+            else:
+                background = _background(str(row["hpo_id"]), orphanet_id, n_diseases, positive)
+                bin_name = str(row["bin"])
+                lo, hi = BINS[bin_name]
+                lower_ratio = _ratio(presence, lo, background)
+                upper_ratio = _ratio(presence, hi, background)
+            lower *= lower_ratio
+            upper *= upper_ratio
+        diseases.append(_Product(orphanet_id, lower, upper))
+    diseases.sort(key=lambda item: (-item.lower_ratio, item.orphanet_id))
+    _leading, reason = _separate(diseases)
+    return diseases, reason is None
+
+
 def catalogue_score(
     accepted_hpo: Sequence[tuple[str, Presence]],
     rows: Sequence[Mapping],
@@ -467,7 +513,7 @@ def _unique_leader(diseases: list[DiseaseScore], attr: str) -> str | None:
     return leaders[0].orphanet_id
 
 
-def _separate(diseases: list[DiseaseScore]) -> tuple[str | None, str | None]:
+def _separate(diseases: Sequence[DiseaseScore | _Product]) -> tuple[str | None, str | None]:
     if not diseases:
         return None, "no_scoreable_disease"
     best = diseases[0].lower_ratio

@@ -7,6 +7,7 @@ import hashlib
 import urllib.request
 from pathlib import Path
 
+from d1_eval.bars import measure_bars
 from d1_eval.frequency import FrequencyBinScorer, frequency_table
 from d1_eval.harness import (
     Pins,
@@ -52,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     store.add_argument("--data", type=Path, required=True)
     store.add_argument("--out", type=Path, required=True)
 
+    bars = commands.add_parser("bars")
+    bars.add_argument("--data", type=Path, required=True)
+    bars.add_argument("--out", type=Path, required=True)
+
     check = commands.add_parser("check-download")
     check.add_argument("--data", type=Path, required=True)
 
@@ -64,7 +69,17 @@ def main(argv: list[str] | None = None) -> int:
         return _check(args.data)
     if args.command == "store":
         return _store(args.data, args.out)
+    if args.command == "bars":
+        return _bars(args.data, args.out)
     raise ValueError(args.command)
+
+
+def _bars(data: Path, out: Path) -> int:
+    text = measure_bars(data)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text)
+    print(text, end="" if text.endswith("\n") else "\n")
+    return 0
 
 
 def _fixtures(out: Path) -> int:
@@ -256,7 +271,7 @@ def _frequency_rows(
         "An ancestor climb on the older flat 0.05 background lowered full-set top-1 "
         "from 1292/4815 to 841/4815. That climb was not rerun on this background, "
         "and this run does not pass a parent map. "
-        "The degree baseline and precision@k at k = 1 and k = 5 were not run. "
+        "Degree baseline and precision@k at k = 1 and k = 5 are in eval/bars-0.0.2.md. "
         "The notebook ships this scorer. Term-overlap-loo copies terms from other packets "
         "in this release, so it uses the labels the score is judged against. It is not shipped."
     )
