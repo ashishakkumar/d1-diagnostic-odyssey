@@ -66,9 +66,9 @@ The comparison panel states that the rows on the page are the synthetic frequenc
 
 ## Measured on this revision
 
-- `make test`: 229 passed, 1 skipped. The skipped test is the opt-in live model smoke. It was not run. The OpenAPI drift tests passed in this run. Gemini-to-OpenRouter `:free` coverage is the stubbed 429 tests only.
-- Cold `make e2e`: 1 passed (10.8s).
-- `d1_eval bars`: exit 0. Frequency-bin packet top-1 1395/4815. It does not beat the degree baseline.
+- `make test`: 239 passed, 1 skipped. The skipped test is the opt-in live model smoke. It was not run. The OpenAPI drift tests passed in this run. Gemini-to-OpenRouter `:free` coverage is the stubbed 429 tests only.
+- Cold `make e2e`: 1 passed (11.3s). The comparison panel shows the public-case ranker sentence. The abstain page does not show a numeric margin.
+- `d1_eval heldout`: exit 0. Resnik best-match average on the 925 test packets beats the degree baseline at k=1 (419/925 vs 327/925) and at k=5 (614/925 vs 533/925). Frequency-bin packet top-1 stays 1395/4815 and does not beat the degree baseline.
 
 ## Contract, prior, and model client
 

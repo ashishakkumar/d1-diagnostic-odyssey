@@ -93,6 +93,14 @@ def _abstain_phrase(
     raise ValueError(unknown)
 
 
+PUBLIC_RANKER_SENTENCE = (
+    "The rows in this summary are the synthetic frequency-bin card. "
+    "The public-case ranker is Resnik best-match average. "
+    "It abstains when the best score is at or below zero. "
+    "On the held-out split that ranker beats the degree baseline at k=1 and k=5."
+)
+
+
 def _append_comparison(
     pieces: list[str],
     spans: list[tuple[int, int, str]],
@@ -101,6 +109,7 @@ def _append_comparison(
     evidence = report.get("evidence") or []
     if not evidence:
         return
+    _append(pieces, spans, PUBLIC_RANKER_SENTENCE, [])
     first = evidence[0]
     if report.get("abstained"):
         reason = report.get("abstain_reason") or "no_scoreable_disease"
