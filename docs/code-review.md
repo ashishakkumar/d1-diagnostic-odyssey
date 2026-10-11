@@ -13,6 +13,10 @@ This review reads the branch `cursor/finish-odyssey-demo-79af` against `cursor/i
 - Frequency-bin 0.0.2 is what `d1_eval store` and the synthetic notebook card score. A re-run on this branch printed full-set top-1 1395/4815 and held-out top-1 1129/3890 train and 266/925 test. The split was not used to choose a threshold. Term-overlap-loo 3806/4815 is labeled and not shipped. Degree baseline and precision@k at 1 and 5 were measured in `eval/bars-0.0.2.md`. Frequency-bin does not beat the degree baseline. The public-case ranker is Resnik best-match average, chosen on fit and validation (`eval/choice.json`) and scored once on the test split (`eval/bars-resnik.md`). That held-out look beats the degree baseline at k=1 and k=5. The comparison panel says so, and it says the on-screen rows are the frequency-bin card. A parent climb inside the frequency-bin product was measured on train only (717/3890) and is not passed in.
 - `PLAN.md` is unchanged by this finish.
 
+## Fixed from the ranker review
+
+[Review ranker scorer diff](bc-137a1ce6-082c-5e78-a4e8-fc3230f36aa7) found no critical defect and no test-split contamination. The winner stayed Resnik best-match average from the fit and validation record. One important defect: the Resnik section had been inserted immediately before the frequency-bin `## Calibration` heading, so that curve could be read as a Resnik calibration. `splice_results` now places the Resnik section after the frequency-bin held-out table. The calibration rows stay under the frequency-bin document.
+
 ## Fixed from this review
 
 - The warning-sign button left the page blank when `fetch` threw. The click is `void save(...)`, so the rejection was unhandled. The page now says the notebook cannot reach the API. A 409 body that is not JSON still shows "Stop. The words were not saved."

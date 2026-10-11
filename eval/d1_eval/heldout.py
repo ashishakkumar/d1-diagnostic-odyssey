@@ -301,18 +301,54 @@ def heldout_markdown(report: Mapping) -> str:
     return "\n".join(lines)
 
 
-def splice_results(path: Path, section: str) -> None:
-    """Insert the held-out section in front of the calibration heading."""
-    text = path.read_text()
-    calibration = text.find("\n## Calibration\n")
-    if calibration == -1:
-        raise RuntimeError("calibration heading is missing")
+def _next_h1(text: str, start: int) -> int:
+    """Index of the next top-level heading, or the end of the text."""
+    index = start
+    while True:
+        found = text.find("\n# ", index)
+        if found == -1:
+            return len(text)
+        if not text.startswith("\n##", found):
+            return found
+        index = found + 1
+
+
+def _strip_resnik(text: str) -> str:
+    """Drop a previously inserted Resnik block. The frequency-bin curve stays."""
     start = text.find(MARKER)
-    block = section.rstrip() + "\n\n"
     if start == -1:
-        updated = text[:calibration] + "\n" + block + text[calibration + 1 :]
+        return text
+    calibration = text.find("\n## Calibration\n", start)
+    following = _next_h1(text, start + len(MARKER))
+    ends = [item for item in (calibration, following) if item != -1 and item != len(text)]
+    if not ends:
+        raise RuntimeError("could not find the end of the Resnik section")
+    end = min(ends)
+    prefix = text[:start].rstrip() + "\n\n"
+    return prefix + text[end + 1 :]
+
+
+def _after_frequency_heldout(text: str) -> int:
+    """Insert after the frequency-bin held-out table, before the next document."""
+    held = text.find("\n## Held-out split\n")
+    if held == -1:
+        raise RuntimeError("frequency-bin held-out heading is missing")
+    return _next_h1(text, held + 1)
+
+
+def splice_results(path: Path, section: str) -> None:
+    """Place the held-out section after the frequency-bin document.
+
+    The frequency-bin calibration heading stays with that document. A second call
+    replaces the same section instead of stacking another copy.
+    """
+    text = _strip_resnik(path.read_text())
+    insert_at = _after_frequency_heldout(text)
+    block = section.rstrip() + "\n\n"
+    if insert_at == len(text):
+        updated = text.rstrip() + "\n\n" + block
     else:
-        updated = text[:start] + block + text[calibration + 1 :]
+        updated = text[: insert_at + 1] + block + text[insert_at + 1 :]
     path.write_text(updated)
 
 

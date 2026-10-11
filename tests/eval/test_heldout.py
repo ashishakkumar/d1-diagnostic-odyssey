@@ -61,12 +61,20 @@ def test_disease_mean_omits_a_disease_with_no_packet() -> None:
     assert precision == pytest.approx(0.5)
 
 
-def test_results_splice_is_idempotent(tmp_path) -> None:
+def test_results_splice_keeps_the_frequency_bin_curve(tmp_path) -> None:
     path = tmp_path / "RESULTS.md"
-    path.write_text("# Public\n\n## Calibration\n\n| row |\n")
+    path.write_text(
+        "# Public\n\nfrequency comparison\n\n"
+        "## Calibration\n\n| row |\n\n"
+        "## Held-out split\n\n| full | train |\n\n"
+        "# Public-case method results\n\nterm overlap\n"
+    )
     section = "# Resnik best-match average, held-out once\n\nmeasured\n"
     splice_results(path, section)
     splice_results(path, section)
     text = path.read_text()
-    assert text.count("# Resnik best-match average, held-out once") == 1
-    assert text.index("measured") < text.index("## Calibration")
+    marker = "# Resnik best-match average, held-out once"
+    assert text.count(marker) == 1
+    assert text.index("## Calibration") < text.index(marker)
+    assert text.index("## Held-out split") < text.index(marker)
+    assert text.index("measured") < text.index("# Public-case method results")
