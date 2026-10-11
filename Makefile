@@ -56,3 +56,15 @@ test: db-reset
 
 safety-scan:
 	PYTHONPATH=services/safety $(VENV)/python -m d1_safety
+
+# --- services/ingest ----------------------------------------------------------
+# Reference loaders and the on-device monthly change list. Archives are local
+# files. Nothing in this target sends a variant anywhere.
+#   make ingest-replay INGEST_ARCHIVES="a.txt.gz b.txt.gz"
+INGEST_OUT ?= services/ingest/change-list-size.tsv
+
+.PHONY: ingest-replay
+
+ingest-replay:
+	PYTHONPATH="services/ingest/src:contracts/src" $(VENV)/python -m d1_ingest.replay \
+		--out "$(INGEST_OUT)" $(INGEST_ARCHIVES)

@@ -1,0 +1,7 @@
+"CLINGEN GENE DISEASE VALIDITY CURATIONS","","","","","","","","",""
+"FILE CREATED: 2026-10-10","","","","","","","","",""
+"WEBPAGE: https://search.clinicalgenome.org/kb/gene-validity","","","","","","","","",""
+"+++++++++++","++++++++++++++","+++++++++++++","++++++++++++++++++","+++++++++","+++++++++","++++++++++++++","+++++++++++++","+++++++++++++++++++","+++++++++++++++++++"
+"GENE SYMBOL","GENE ID (HGNC)","DISEASE LABEL","DISEASE ID (MONDO)","MOI","SOP","CLASSIFICATION","ONLINE REPORT","CLASSIFICATION DATE","GCEP"
+"+++++++++++","++++++++++++++","+++++++++++++","++++++++++++++++++","+++++++++","+++++++++","++++++++++++++","+++++++++++++","+++++++++++++++++++","+++++++++++++++++++"
+"FAKEGENE","HGNC:999999","Synthetic fixture condition","MONDO:9999999","AD","SOP10","Fixture label","https://example.invalid/report","2024-03-14T16:00:00.000Z","Fixture panel"
