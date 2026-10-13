@@ -1,0 +1,75 @@
+{
+  "id": "synthetic-beta",
+  "subject": {
+    "id": "synthetic-subject-beta"
+  },
+  "phenotypicFeatures": [
+    {
+      "type": {
+        "id": "HP:0001250",
+        "label": "Seizure"
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0004322",
+        "label": "Short stature"
+      }
+    }
+  ],
+  "interpretations": [
+    {
+      "id": "synthetic-beta-interp",
+      "progressStatus": "SOLVED",
+      "diagnosis": {
+        "disease": {
+          "id": "SYN:BETA",
+          "label": "SYN:BETA"
+        },
+        "genomicInterpretations": [
+          {
+            "subjectOrBiosampleId": "synthetic-subject-beta",
+            "interpretationStatus": "CAUSATIVE",
+            "variantInterpretation": {
+              "variationDescriptor": {
+                "id": "synthetic-beta-var",
+                "geneContext": {
+                  "valueId": "HGNC:00001",
+                  "symbol": "SYN2"
+                },
+                "expressions": [
+                  {
+                    "syntax": "hgvs.c",
+                    "value": "NM_000000.1:c.1A>G"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "SYN:BETA",
+        "label": "SYN:BETA"
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "synthetic-fixture",
+    "resources": [
+      {
+        "id": "hp",
+        "name": "Human Phenotype Ontology",
+        "version": "test",
+        "namespacePrefix": "HP",
+        "iriPrefix": "http://purl.obolibrary.org/obo/HP_"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0.0",
+    "created": "2026-08-01T00:00:00Z"
+  }
+}

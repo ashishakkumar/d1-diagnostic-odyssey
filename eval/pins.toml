@@ -1,0 +1,34 @@
+# Phenopacket Store 0.1.27, checked against the GitHub release asset on 10 October 2026.
+# The Zenodo record 10.5281/zenodo.20614899 is that release. Its software zip is the
+# repository archive, not the packet zip named here.
+
+[store]
+version = "0.1.27"
+bytes = 19431098
+sha256 = "d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a"
+doi = "10.5281/zenodo.20614899"
+url = "https://github.com/monarch-initiative/phenopacket-store/releases/download/0.1.27/all_phenopackets.zip"
+released = "2026-06-09"
+
+[mondo]
+version = "v2026-10-06"
+url = "https://github.com/monarch-initiative/mondo/releases/download/v2026-10-06/mondo_nodes.tsv"
+
+[hpo]
+version = "v2026-09-01"
+url = "https://github.com/obophenotype/human-phenotype-ontology/releases/download/v2026-09-01/hp.obo"
+
+[metric]
+k = [1, 3, 10]
+tied_at_best = 10
+keep_fraction = 0.5
+knowledge_cutoff = "2026-06-23"
+
+[orphanet]
+version = "en_product4"
+url = "https://www.orphadata.com/data/xml/en_product4.xml"
+fallback_url = "http://www.orphadata.org/data/xml/en_product4.xml"
+
+[tool]
+name = "term-overlap"
+version = "0.0.0"

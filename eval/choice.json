@@ -1,0 +1,187 @@
+{
+  "candidates": {
+    "bm25": {
+      "abstain": "raw",
+      "beats": true,
+      "fit": {
+        "1": {
+          "count": 2897.0,
+          "hits": 1128.0,
+          "percentage": 0.3893683120469451,
+          "precision": 0.3893683120469451
+        },
+        "5": {
+          "count": 2897.0,
+          "hits": 1676.0,
+          "percentage": 0.5785295132896099,
+          "precision": 0.11570590265791837
+        }
+      },
+      "validation": {
+        "1": {
+          "count": 993.0,
+          "hits": 379.0,
+          "percentage": 0.3816717019133938,
+          "precision": 0.3816717019133938
+        },
+        "5": {
+          "count": 993.0,
+          "hits": 557.0,
+          "percentage": 0.5609264853977844,
+          "precision": 0.11218529707955795
+        }
+      }
+    },
+    "degree_corrected": {
+      "abstain": "raw",
+      "beats": false,
+      "fit": {
+        "1": {
+          "count": 2897.0,
+          "hits": 846.0,
+          "percentage": 0.29202623403520883,
+          "precision": 0.29202623403520883
+        },
+        "5": {
+          "count": 2897.0,
+          "hits": 1468.0,
+          "percentage": 0.5067311011391095,
+          "precision": 0.10134622022781908
+        }
+      },
+      "validation": {
+        "1": {
+          "count": 993.0,
+          "hits": 303.0,
+          "percentage": 0.30513595166163143,
+          "precision": 0.30513595166163143
+        },
+        "5": {
+          "count": 993.0,
+          "hits": 498.0,
+          "percentage": 0.5015105740181269,
+          "precision": 0.10030211480362626
+        }
+      }
+    },
+    "ic_overlap": {
+      "abstain": "raw",
+      "beats": true,
+      "fit": {
+        "1": {
+          "count": 2897.0,
+          "hits": 1025.0,
+          "percentage": 0.35381429064549536,
+          "precision": 0.35381429064549536
+        },
+        "5": {
+          "count": 2897.0,
+          "hits": 1636.0,
+          "percentage": 0.5647221263375906,
+          "precision": 0.11294442526751466
+        }
+      },
+      "validation": {
+        "1": {
+          "count": 993.0,
+          "hits": 359.0,
+          "percentage": 0.36153071500503525,
+          "precision": 0.36153071500503525
+        },
+        "5": {
+          "count": 993.0,
+          "hits": 544.0,
+          "percentage": 0.5478348439073515,
+          "precision": 0.1095669687814713
+        }
+      }
+    },
+    "phenomizer": {
+      "abstain": "raw",
+      "beats": true,
+      "fit": {
+        "1": {
+          "count": 2897.0,
+          "hits": 1095.0,
+          "percentage": 0.37797721781152915,
+          "precision": 0.37797721781152915
+        },
+        "5": {
+          "count": 2897.0,
+          "hits": 1706.0,
+          "percentage": 0.5888850535036244,
+          "precision": 0.11777701070072115
+        }
+      },
+      "validation": {
+        "1": {
+          "count": 993.0,
+          "hits": 374.0,
+          "percentage": 0.3766364551863041,
+          "precision": 0.3766364551863041
+        },
+        "5": {
+          "count": 993.0,
+          "hits": 562.0,
+          "percentage": 0.5659617321248741,
+          "precision": 0.11319234642497589
+        }
+      }
+    },
+    "resnik_bma": {
+      "abstain": "raw",
+      "beats": true,
+      "fit": {
+        "1": {
+          "count": 2897.0,
+          "hits": 1306.0,
+          "percentage": 0.4508111839834311,
+          "precision": 0.4508111839834311
+        },
+        "5": {
+          "count": 2897.0,
+          "hits": 1879.0,
+          "percentage": 0.6486020020711081,
+          "precision": 0.1297204004142172
+        }
+      },
+      "validation": {
+        "1": {
+          "count": 993.0,
+          "hits": 467.0,
+          "percentage": 0.4702920443101712,
+          "precision": 0.4702920443101712
+        },
+        "5": {
+          "count": 993.0,
+          "hits": 627.0,
+          "percentage": 0.6314199395770392,
+          "precision": 0.1262839879154091
+        }
+      }
+    }
+  },
+  "counts": {
+    "fit": 2897,
+    "test_skipped": 925,
+    "validation": 993
+  },
+  "degree_validation_tie10": {
+    "1": {
+      "count": 993.0,
+      "hits": 328.0,
+      "percentage": 0.33031218529707956,
+      "precision": 0.33031218529707956
+    },
+    "5": {
+      "count": 993.0,
+      "hits": 526.0,
+      "percentage": 0.5297079556898288,
+      "precision": 0.10594159113796672
+    }
+  },
+  "shipped_because": "beats_degree_on_validation",
+  "store_sha256": "d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a",
+  "test_scored": true,
+  "winner": "resnik_bma"
+}

@@ -1,0 +1,4 @@
+#AlleleID	Type	Name	GeneID	GeneSymbol	HGNC_ID	ClinicalSignificance	ClinSigSimple	LastEvaluated	Assembly	VariationID
+100	snv	NM_000138.5(FBN1):c.1A>G	2200	FBN1	HGNC:3603	ALPHA	0	Jan 01, 2024	GRCh37	42
+100	snv	NM_000138.5(FBN1):c.1A>G	2200	FBN1	HGNC:3603	ALPHA	0	Jan 01, 2024	GRCh38	42
+200	snv	NM_000001.1(OTHER):c.2T>C	1	OTHER	HGNC:1	SAME	0	Jan 01, 2024	GRCh38	7

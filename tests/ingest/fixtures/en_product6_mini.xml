@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JDBOR date="2026-06-23 07:57:31" version="1.3.42 / 4.1.8 [2025-03-03]" copyright="Orphanet (c) 2026">
+  <Availability>
+    <Licence>
+      <ShortIdentifier>CC-BY-4.0</ShortIdentifier>
+    </Licence>
+  </Availability>
+  <DisorderList count="1">
+    <Disorder id="1">
+      <OrphaCode>999999</OrphaCode>
+      <Name lang="en">Synthetic fixture disease</Name>
+      <DisorderGeneAssociationList count="1">
+        <DisorderGeneAssociation>
+          <Gene>
+            <Symbol>FAKEGENE</Symbol>
+          </Gene>
+          <DisorderGeneAssociationType>
+            <Name lang="en">Fixture association type</Name>
+          </DisorderGeneAssociationType>
+        </DisorderGeneAssociation>
+      </DisorderGeneAssociationList>
+    </Disorder>
+  </DisorderList>
+</JDBOR>

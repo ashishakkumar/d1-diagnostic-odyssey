@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4efe4;
+  --foreground: #1c1612;
+  --primary: #1c1612;
+  --primary-foreground: #f4efe4;
+  --secondary: #e7dfd2;
+  --secondary-foreground: #1c1612;
+  --muted-foreground: #5c534c;
+  --border: #d9cfc2;
+  --input: #d9cfc2;
+  --ring: #c45c26;
+  --accent: #efe6d8;
+  --terracotta: #c45c26;
+  --parchment: #f4efe4;
+  --ink: #1c1612;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-accent: var(--accent);
+  --color-terracotta: var(--terracotta);
+  --color-parchment: var(--parchment);
+  --color-ink: var(--ink);
+  --font-display: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-serif: var(--font-literata), Literata, Georgia, serif;
+  --font-ui: var(--font-grotesk), "Space Grotesk", sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-literata), Literata, Georgia, serif;
+}
+
+mark {
+  background: color-mix(in srgb, var(--terracotta) 22%, transparent);
+  color: inherit;
+}
+
+.scan-window {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--terracotta) 42%, transparent),
+    transparent
+  );
+  box-shadow: inset 0 -1px 0 var(--terracotta);
+}
+
+.evidence-bar {
+  transition: width 320ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-window {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .evidence-bar {
+    transition: none;
+  }
+}

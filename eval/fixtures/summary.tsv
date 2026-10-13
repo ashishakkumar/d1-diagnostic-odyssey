@@ -1,0 +1,6 @@
+patient_id	cohort	disease_id	disease	gene	filename
+synthetic-subject-alpha	SYN	SYN:ALPHA	Synthetic alpha	LEAKGENE	synthetic-alpha.json
+synthetic-subject-beta	SYN	SYN:BETA	Synthetic beta	LEAKGENE	synthetic-beta.json
+synthetic-subject-gamma	SYN	SYN:GAMMA	Synthetic gamma	LEAKGENE	synthetic-gamma.json
+synthetic-subject-none	SYN	SYN:ALPHA	Synthetic alpha	LEAKGENE	synthetic-none.json
+SYN-delta	SYN	SYN:DELTA	Synthetic delta	LEAKGENE	

@@ -1,5 +1,7 @@
 # Review of the correlator plan
 
+The implementation review of the finished notebook is [code-review.md](code-review.md). This file is the plan critique.
+
 Five reviews read `PLAN.md` after it had been rewritten from the HPO-to-Orphanet ranker into a multi-omics correlator. They did not run web searches. The ranker review that used to live in this file is superseded. What it had already forced, and this plan still uses, is listed at the end.
 
 ## Evaluator

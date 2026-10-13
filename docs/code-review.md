@@ -1,0 +1,44 @@
+# Code review of the finished notebook
+
+For research use only. Not for use in diagnostic procedures.
+
+This review reads the branch `cursor/finish-odyssey-demo-79af` against `cursor/integrate-safe-core-e84c`. It does not replace [review.md](review.md), which is the critique of `PLAN.md`. Thresholds were not refit. Term-overlap-loo was not shipped.
+
+## What holds
+
+- Demo loads still call `app.apply_decision`. The API role does not write observations on its own.
+- The five synthetic cases, the stop screen, the India footer, and the opt-in allele prior are covered by `tests/web/test_demo.py` and by Playwright in `apps/web/e2e/demo.spec.ts`. The prior fixture does not change the catalogue report.
+- `contracts/openapi.json` and `contracts/ts/src/api.ts` are checked against the app by `tests/test_openapi.py`.
+- `complete()` calls the Gemini primary first. A stubbed 429 / `RESOURCE_EXHAUSTED` is the only path to OpenRouter, and that call must use an id ending in `:free`. An unset `OPENROUTER_FREE_MODELS` uses `DEFAULT_OPENROUTER_FREE_MODELS`, which is non-empty. The returned `Completion.provider` is `gemini`, `openrouter`, or `gazetteer`. A prompt without `SYNTHETIC-ONLY` raises `SyntheticRejected` before either provider is called. No fallback key degrades through `complete_or_degrade` to pinned wording. The notebook routes do not import the client.
+- Frequency-bin 0.0.2 is what `d1_eval store` and the synthetic notebook card score. A re-run on this branch printed full-set top-1 1395/4815 and held-out top-1 1129/3890 train and 266/925 test. The split was not used to choose a threshold. Term-overlap-loo 3806/4815 is labeled and not shipped. Degree baseline and precision@k at 1 and 5 were measured in `eval/bars-0.0.2.md`. Frequency-bin does not beat the degree baseline. The public-case ranker is Resnik best-match average, chosen on fit and validation (`eval/choice.json`) and scored once on the test split (`eval/bars-resnik.md`). That held-out look beats the degree baseline at k=1 and k=5. The comparison panel says so, and it says the on-screen rows are the frequency-bin card. A parent climb inside the frequency-bin product was measured on train only (717/3890) and is not passed in.
+- `PLAN.md` is unchanged by this finish.
+
+## Fixed from the ranker review
+
+[Review ranker scorer diff](bc-137a1ce6-082c-5e78-a4e8-fc3230f36aa7) found no critical defect and no test-split contamination. The winner stayed Resnik best-match average from the fit and validation record. One important defect: the Resnik section had been inserted immediately before the frequency-bin `## Calibration` heading, so that curve could be read as a Resnik calibration. `splice_results` now places the Resnik section after the frequency-bin held-out table. The calibration rows stay under the frequency-bin document.
+
+## Fixed from this review
+
+- The warning-sign button left the page blank when `fetch` threw. The click is `void save(...)`, so the rejection was unhandled. The page now says the notebook cannot reach the API. A 409 body that is not JSON still shows "Stop. The words were not saved."
+- A set `OPENROUTER_API_KEY` with a blank `OPENROUTER_FREE_MODELS` used to skip OpenRouter. The default is now the non-empty priced-zero list checked in as `DEFAULT_OPENROUTER_FREE_MODELS`. A set list still replaces it, and an id that does not end in `:free` is still rejected. No fallback key still records `gazetteer` and does not call OpenRouter.
+- A 429 or `RESOURCE_EXHAUSTED` while listing Gemini models now takes the same OpenRouter `:free` path as a 429 on `generateContent`. A 503 whose body is only the word "quota" still does not.
+- Playwright's config file is in `apps/web`. `cwd: ".."` is the `apps` directory, which has no `.venv`. The web server command is `.venv/bin/python scripts/demo.py` with `cwd: "../.."`, the repo root. A cold `make e2e` with ports 3000 and 8000 closed started the API and passed the five-case browser test.
+- `d1_eval store` printed the term-overlap-loo top-1 as an unlabeled `top1=`. The command summary now leads with `frequency-bin` totals and labels the stand-in line `term-overlap-loo`. `eval/RESULTS.md` was not rewritten.
+- An abstained comparison still showed `Margin 1.000` when ten diseases tied. The panel hides that number when `abstained` is true. The API still returns margin 1 for the tie.
+- `complete_with_gemini` reads `GEMINI_API_KEY` or `GOOGLE_API_KEY`, follows `nextPageToken`, chooses the id, calls Gemini first, and stores that id on `Completion`. OpenRouter stays behind a 429 or `RESOURCE_EXHAUSTED`, and only for an id ending in `:free`. No key returns the pinned gazetteer sentence, does not call HTTP, and does not write the replay cache.
+- `is_rate_limited` matches `429` and `RESOURCE_EXHAUSTED` only. The word "quota" on its own does not fall back.
+- A lone OpenAPI `const` was rendered as `string`. `margin_reason` in `contracts/ts/src/api.ts` is now `"runner_up_ratio_is_zero" | null`.
+- A gazetteer degrade is appended to the jsonl log and is not stored in the replay cache. A pinned sentence must not hide a key that appears later.
+- `create_app` is imported at the top of `export_openapi.py`. The API package does not import that module.
+- The catalogue prepare step no longer caches by `id(rows)` and length. A freed list can reuse that id, and an in-place bin edit would keep a stale corpus rate. `_prepare` rebuilds the partition and the corpus on every call. `test_a_freed_table_does_not_score_the_next_table` and `test_an_edited_bin_is_scored_on_the_next_call` lock that.
+- The earlier flat-background block in `eval/RESULTS.md` is headed "Archived frequency-bin 0.0.1" and says that run is not the shipped scorer. The 0.0.2 note above it still says the notebook ships that scorer. A later `d1_eval store` prepends the same banner.
+
+## Left as they are
+
+- The stop paragraph repeats the 112 sentence already in the page footer. The stop template and the footer both carry that sentence. The screen still names the matched phrase and does not save the draft.
+- The package is still named `d4_llm`. Renaming it does not change Gemini-then-OpenRouter.
+- `eval/RESULTS.md` has one calibration row per distinct score. That is the existing harness format.
+- Term-overlap's held-out row stays in `eval/RESULTS.md` so the leakage is visible. It is not an independent catalogue, and it is not the shipped scorer.
+- `FrequencyBinScorer` still accepts an optional parent map. The notebook and `d1_eval store` do not pass one. A train-only climb on the 0.0.2 background lowered top-1 from 1172/3890 to 717/3890, so the climb stays unused.
+- The synthetic card abstains when 10 diseases sit within a factor of 2. The public-case ranker abstains only when the best score is at or below zero. The panel says the on-screen rows are the frequency-bin card.
+- The population prior is a checked-in allele-frequency fixture. It is opt-in, marked experimental, and does not change the catalogue comparison. This build did not call gnomAD or ClinVar. No model is used for that prior.

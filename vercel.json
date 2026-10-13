@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "{services,contracts/src,tests/ingest/fixtures,templates}/**",
+      "excludeFiles": "{apps,eval,docs,scripts,.git,tests/web,**/node_modules}/**"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+}

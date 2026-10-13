@@ -1,0 +1,28 @@
+format-version: 1.2
+data-version: synthetic-nonspecific-1
+
+[Term]
+id: HP:0001249
+name: Intellectual disability
+
+[Term]
+id: HP:0001250
+name: Seizure
+
+[Term]
+id: HP:0001256
+name: Mild intellectual disability
+is_a: HP:0001249 ! Intellectual disability
+
+[Term]
+id: HP:0002197
+name: Generalized-onset seizure
+is_a: HP:0001250 ! Seizure
+
+[Term]
+id: HP:0001166
+name: Arachnodactyly
+
+[Term]
+id: HP:0000272
+name: Malar flattening

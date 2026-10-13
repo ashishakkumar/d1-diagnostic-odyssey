@@ -1,0 +1,124 @@
+{
+  "abstain": "raw",
+  "beats_degree_on_test": true,
+  "decoy": {
+    "gene_recorded": 925,
+    "hpo_unchanged": 925,
+    "packets": 925,
+    "rebuild_failures": 0,
+    "scores_unchanged": 925
+  },
+  "degree_abstain": "tie10",
+  "diagnosis_train": {
+    "ancestor_on_truth": 12650,
+    "exact_on_truth": 11862,
+    "frequency_parent_climb_ranked_anyway": {
+      "1": {
+        "count": 3890,
+        "hits": 717,
+        "percentage": 0.18431876606683806,
+        "precision": 0.18431876606683806
+      },
+      "5": {
+        "count": 3890,
+        "hits": 1374,
+        "percentage": 0.3532133676092545,
+        "precision": 0.0706426735218491
+      }
+    },
+    "frequency_ranked_anyway": {
+      "1": {
+        "count": 3890,
+        "hits": 1172,
+        "percentage": 0.3012853470437018,
+        "precision": 0.3012853470437018
+      },
+      "5": {
+        "count": 3890,
+        "hits": 1983,
+        "percentage": 0.5097686375321336,
+        "precision": 0.10195372750642315
+      }
+    },
+    "frequency_with_abstention": {
+      "1": {
+        "count": 3890,
+        "hits": 1129,
+        "percentage": 0.29023136246786635,
+        "precision": 0.29023136246786635
+      },
+      "5": {
+        "count": 3890,
+        "hits": 1501,
+        "percentage": 0.3858611825192802,
+        "precision": 0.07717223650385387
+      }
+    },
+    "query_terms": 33952,
+    "train_packets": 3890,
+    "truth_lower_ratio_zero": 18
+  },
+  "disease_mean_present": {
+    "degree": {
+      "1": {
+        "diseases": 165,
+        "percentage": 0.38621034161406925,
+        "precision": 0.38621034161406925
+      },
+      "5": {
+        "diseases": 165,
+        "percentage": 0.5535400134218741,
+        "precision": 0.11070800268437467
+      }
+    },
+    "resnik_bma": {
+      "1": {
+        "diseases": 165,
+        "percentage": 0.4809438006932468,
+        "precision": 0.4809438006932468
+      },
+      "5": {
+        "diseases": 165,
+        "percentage": 0.6652167368948335,
+        "precision": 0.13304334737896648
+      }
+    }
+  },
+  "diseases_with_a_test_packet": 165,
+  "shipped_because": "beats_degree_on_validation",
+  "store_sha256": "d0c70005bb09b87035087516252b6b539fbc0415be7c664b73c9cde7eedf205a",
+  "test": {
+    "degree": {
+      "1": {
+        "count": 925,
+        "hits": 327,
+        "percentage": 0.3535135135135135,
+        "precision": 0.3535135135135135
+      },
+      "5": {
+        "count": 925,
+        "hits": 533,
+        "percentage": 0.5762162162162162,
+        "precision": 0.1152432432432443
+      }
+    },
+    "resnik_bma": {
+      "1": {
+        "count": 925,
+        "hits": 419,
+        "percentage": 0.45297297297297295,
+        "precision": 0.45297297297297295
+      },
+      "5": {
+        "count": 925,
+        "hits": 614,
+        "percentage": 0.6637837837837838,
+        "precision": 0.13275675675675805
+      }
+    }
+  },
+  "test_packets": 925,
+  "test_scored": true,
+  "unique_map_diseases": 249,
+  "winner": "resnik_bma"
+}
