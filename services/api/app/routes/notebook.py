@@ -13,6 +13,8 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, constr
 
 from app.demo_cases import DEMO_CASES, case_by_slug, load_demo_case
+from app.analyze import analyze as run_analyze
+from app.analyze import rerank as run_rerank
 from app.pipeline import REVIEWER, build_pipeline, questions_for
 from app.routes.ports import (
     country_footer,
@@ -73,6 +75,18 @@ class PipelineIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     slug: str | None = None
     note: str | None = None
+
+
+class AnalyzeIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    note: constr(min_length=1, max_length=8000)
+    use_ai: bool = True
+
+
+class RerankIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    present: list[constr(pattern=r"^HP:[0-9]{7}$")]
+    absent: list[constr(pattern=r"^HP:[0-9]{7}$")] = []
 
 
 class ConfirmTermIn(BaseModel):
@@ -342,6 +356,28 @@ def create_app() -> FastAPI:
         except SafetyError as exc:
             raise HTTPException(status_code=422, detail="the page failed the scan") from exc
         return Response(content=pdf, media_type="application/pdf")
+
+    @app.post("/analyze")
+    def analyze_note(body: AnalyzeIn) -> dict[str, object]:
+        """Free-text note to ranked rare diseases. The note is not stored."""
+        try:
+            payload = run_analyze(body.note, body.use_ai)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if isinstance(payload.get("stop"), dict):
+            raise HTTPException(status_code=409, detail=payload["stop"])
+        return payload
+
+    @app.post("/rerank")
+    def rerank(body: RerankIn) -> dict[str, object]:
+        """Rank again after the user confirms or corrects HPO terms."""
+        return run_rerank(body.present, body.absent)
+
+    @app.get("/ai-status")
+    def ai_status() -> dict[str, object]:
+        from app import llm_extract
+
+        return {"available": llm_extract.available()}
 
     @app.post("/pipeline")
     def pipeline(body: PipelineIn) -> dict[str, object]:

@@ -19,7 +19,7 @@ const grotesk = Space_Grotesk({
 });
 
 export const metadata = {
-  title: "Synthetic notebook",
+  title: "Diagnostic Odyssey",
   description: "For research use only. Not for use in diagnostic procedures.",
 };
 

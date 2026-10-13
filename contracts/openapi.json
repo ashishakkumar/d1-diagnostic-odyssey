@@ -1,6 +1,27 @@
 {
   "components": {
     "schemas": {
+      "AnalyzeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          },
+          "use_ai": {
+            "default": true,
+            "title": "Use Ai",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "AnalyzeIn",
+        "type": "object"
+      },
       "ApprovalRequest": {
         "additionalProperties": false,
         "description": "What a client may send to the gate. There is no reviewer field.",
@@ -419,6 +440,33 @@
         "title": "Report",
         "type": "object"
       },
+      "RerankIn": {
+        "additionalProperties": false,
+        "properties": {
+          "absent": {
+            "default": [],
+            "items": {
+              "pattern": "^HP:[0-9]{7}$",
+              "type": "string"
+            },
+            "title": "Absent",
+            "type": "array"
+          },
+          "present": {
+            "items": {
+              "pattern": "^HP:[0-9]{7}$",
+              "type": "string"
+            },
+            "title": "Present",
+            "type": "array"
+          }
+        },
+        "required": [
+          "present"
+        ],
+        "title": "RerankIn",
+        "type": "object"
+      },
       "SessionBody": {
         "additionalProperties": false,
         "properties": {
@@ -625,6 +673,67 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/ai-status": {
+      "get": {
+        "operationId": "ai_status_ai_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Ai Status Ai Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ai Status"
+      }
+    },
+    "/analyze": {
+      "post": {
+        "description": "Free-text note to ranked rare diseases. The note is not stored.",
+        "operationId": "analyze_note_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Analyze Note Analyze Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analyze Note"
+      }
+    },
     "/cases": {
       "get": {
         "operationId": "list_cases_cases_get",
@@ -1225,6 +1334,47 @@
           }
         },
         "summary": "Confirm Pipeline"
+      }
+    },
+    "/rerank": {
+      "post": {
+        "description": "Rank again after the user confirms or corrects HPO terms.",
+        "operationId": "rerank_rerank_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerankIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Rerank Rerank Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rerank"
       }
     },
     "/session": {

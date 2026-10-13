@@ -1,5 +1,10 @@
 /* Generated from contracts/openapi.json. Do not edit by hand. */
 
+export interface AnalyzeIn {
+  note: string;
+  use_ai?: boolean;
+}
+
 export interface ApprovalRequest {
   decision: "approve" | "reject";
   draft_id: string;
@@ -70,6 +75,11 @@ export interface Report {
   margin_reason?: "runner_up_ratio_is_zero" | null;
   probability?: number | null;
   reliability_curve?: ReliabilityPoint[] | null;
+}
+
+export interface RerankIn {
+  absent?: string[];
+  present: string[];
 }
 
 export interface SessionBody {
