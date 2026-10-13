@@ -192,7 +192,8 @@ class Catalog:
         p = [self.idx[x] for x in dict.fromkeys(present) if x in self.idx]
         a = [self.idx[x] for x in dict.fromkeys(absent) if x in self.idx]
         if not p:
-            return {"ranks": [], "abstained": True, "reason": "No present finding was grounded to an HPO term."}
+            return {"ranks": [], "abstained": True, "discriminators": [],
+                    "reason": "No present finding was grounded to an HPO term."}
         sims, best_q, score = self.scores(p, a)
         order = np.argsort(-score, kind="stable")[: max(top, 10)]
         best = float(score[order[0]])

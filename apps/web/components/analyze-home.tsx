@@ -322,7 +322,7 @@ export function AnalyzeHome() {
           <section className="space-y-2" data-testid="separate">
             <h2 className="font-display text-xl">What would best separate the top candidates</h2>
             <ul className="space-y-1 text-sm">
-              {result.discriminators.map((d) => (
+              {(result.discriminators ?? []).map((d) => (
                 <li key={d.hpo_id}>
                   <span className="font-ui">{d.label}</span>{" "}
                   <span className="text-muted-foreground">listed for {d.seen_in.join(", ")}</span>
