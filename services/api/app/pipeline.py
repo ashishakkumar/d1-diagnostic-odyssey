@@ -19,7 +19,7 @@ from app.routes.ports import lay_wording, red_flag
 
 METHOD = (
     "Lexicon match, then Resnik best-match average on the synthetic table. "
-    "No language model ran. The free-tier quota is closed until 2026-10-12 00:00 UTC."
+    "No language model ran."
 )
 REVIEWER = "synthetic-reader"
 

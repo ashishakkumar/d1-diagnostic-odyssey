@@ -38,7 +38,7 @@ export function NotebookHome() {
           <p>A synthetic case file. This is not a diagnosis.</p>
           <p>
             Read, Map, and Match are rules: a fixed lexicon, then a lookup on the ten-row synthetic
-            table. No language model ran. The free-tier quota is closed until 2026-10-12 00:00 UTC.
+            table. No language model ran.
           </p>
           <p>
             Rank is Resnik best-match average, a scoring model on that table. It is not a language
@@ -60,7 +60,7 @@ export function NotebookHome() {
           <ul className="space-y-2">
             {demos.map((demo) => (
               <li key={demo.slug}>
-                <a className="font-ui underline" href={`/?slug=${demo.slug}`}>
+                <a className="font-ui underline" href={`/examples?slug=${demo.slug}`}>
                   {demo.title}
                 </a>
                 <span className="mt-1 block text-muted-foreground">{demo.blurb}</span>
