@@ -24,3 +24,15 @@ Caveats: this is not comparable with the earlier 249-disease result (45.3% top-1
 much smaller Orphanet-mapped set. phenotype.hpoa is partly curated from the same publications as
 the packets, so these numbers are likely optimistic. Inputs are gold codes, not free text; see
 eval/extraction/RESULTS.md for the extraction loss.
+
+## Weak-signal flag (2026-10-13)
+
+Flag fires on: fewer than two present findings, top score < 1.5, a tie, top-5 relative spread
+(top1 - top5) / top1 < 0.03, or every present term has IC < 4.0 (all common). Thresholds chosen on
+train (eval/full_catalogue/abstain.py), reported on test.
+
+| rule | split | packets | flagged | top-1 when flagged | top-1 when not flagged |
+| --- | --- | --- | --- | --- | --- |
+| old (n<2, top<1.5, tie) | test | 2,106 | 5.9% | 6.5% (124) | 35.5% |
+| new | test | 2,106 | 15.6% | 5.2% (328) | 39.1% |
+| new | train | 8,239 | 15.1% | 6.1% | 39.3% |

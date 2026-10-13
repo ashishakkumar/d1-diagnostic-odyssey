@@ -84,3 +84,13 @@ def test_emergency_stop(client):
 def test_rerank(client):
     r = client.post("/rerank", json={"present": ["HP:0001250", "HP:0000252"], "absent": []})
     assert r.status_code == 200 and r.json()["ranks"]
+
+
+def test_common_clustered_findings_are_flagged():
+    r = catalog().rank(["HP:0001250", "HP:0001252", "HP:0000252", "HP:0000750"], ["HP:0001626"])
+    assert r["abstained"] is True and "common" in r["reason"]
+
+
+def test_specific_findings_are_not_flagged():
+    r = catalog().rank(["HP:0001166", "HP:0001083", "HP:0002616", "HP:0000098"], [])
+    assert r["abstained"] is False

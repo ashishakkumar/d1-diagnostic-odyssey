@@ -17,6 +17,10 @@ from pathlib import Path
 
 import numpy as np
 
+# Weak-signal flag, thresholds set on the Phenopacket train split (eval/full_catalogue/abstain.py).
+WEAK_TOP = 1.5
+WEAK_SPREAD = 0.03  # (top1 - top5) / top1
+WEAK_MAX_IC = 4.0  # every present term is common
 ABSENT_WEIGHT = 0.05  # set on the train split only, see eval/full_catalogue
 DATA = Path(__file__).resolve().parent / "data" / "hpo"
 _NEG_CUES = re.compile(
@@ -198,7 +202,11 @@ class Catalog:
         order = np.argsort(-score, kind="stable")[: max(top, 10)]
         best = float(score[order[0]])
         second = float(score[order[1]])
-        weak = len(p) < 2 or best < 1.5 or (best - second) < 1e-6
+        fifth = float(score[order[4]])
+        spread = (best - fifth) / best if best > 0 else 0.0
+        common = float(max(self.ic[p])) < WEAK_MAX_IC
+        weak = (len(p) < 2 or best < WEAK_TOP or (best - second) < 1e-6
+                or spread < WEAK_SPREAD or common)
         ranks = []
         for d in order[:top]:
             d = int(d)
@@ -217,8 +225,9 @@ class Catalog:
                           "bar": round(max(float(score[d]), 0) / best, 3) if best > 0 else 0.0,
                           "evidence": ev, "against": against, "link": disease_link(self.diseases[d])})
         return {"ranks": ranks, "abstained": bool(weak),
-                "reason": ("Weak signal: fewer than two findings, a low top score, or a tie. "
-                           "Treat this list as unordered.") if weak else None,
+                "reason": ("Weak signal: " + ("all matched findings are common ones. " if common else
+                            "the top scores are too close together, or too few findings. ")
+                           + "Treat this list as unordered.") if weak else None,
                 "discriminators": self.discriminators([int(d) for d in order[:5]], set(p) | set(a))}
 
     def discriminators(self, top: list[int], asked: set[int], k: int = 5) -> list[dict]:
