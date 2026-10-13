@@ -14,6 +14,7 @@ type Finding = {
   candidates: Candidate[];
   chosen: string | null;
   needs_review: boolean;
+  source?: string;
 };
 type Evidence = { query: string; disease_term: string; disease_term_id: string; ic: number; exact: boolean };
 type Rank = {
@@ -244,7 +245,7 @@ export function AnalyzeHome() {
                     className={`rounded-md border px-3 py-2 text-sm ${f.needs_review ? "border-dashed border-terracotta" : "border-border"} ${f.present ? "" : "line-through decoration-terracotta"}`}
                   >
                     <span className="font-ui block text-xs text-muted-foreground">
-                      “{f.phrase}” {f.present ? "" : "· absent"} {f.onset ? `· onset ${f.onset}` : ""}
+                      “{f.phrase}” {f.present ? "" : "· absent"} {f.source === "rules" ? "· rules" : "· model"} {f.onset ? `· onset ${f.onset}` : ""}
                     </span>
                     {chosen ? (
                       <span>

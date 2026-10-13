@@ -1,0 +1,18 @@
+{
+ "skipped": 32,
+ "catalogue_diseases": 12867,
+ "all": {
+  "n": 10345,
+  "top1": 0.3416,
+  "top5": 0.5733,
+  "top10": 0.6606,
+  "median_rank": 3
+ },
+ "test": {
+  "n": 2106,
+  "top1": 0.3381,
+  "top5": 0.5679,
+  "top10": 0.661,
+  "median_rank": 3
+ }
+}

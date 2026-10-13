@@ -37,7 +37,7 @@ sys.setrecursionlimit(10000)
 terms = sorted(t for t in nodes if ROOT in anc(t))
 idx = {t: i for i, t in enumerate(terms)}
 # annotations
-dis = {}; names = {}
+dis = {}; names = {}; frequent = set()
 for line in open(src / "phenotype.hpoa"):
     if line.startswith("#") or line.startswith("database_id"): continue
     f = line.rstrip("\n").split("\t")
@@ -45,6 +45,14 @@ for line in open(src / "phenotype.hpoa"):
     d = f[0]; names[d] = f[1]
     pos, neg = dis.setdefault(d, (set(), set()))
     (neg if f[2] == "NOT" else pos).add(f[3])
+    fq = f[7].strip()
+    hi = fq in ("HP:0040280", "HP:0040281")
+    if "/" in fq:
+        a_, b_ = fq.split("/"); hi = int(b_) > 0 and int(a_) / int(b_) >= 0.8
+    elif fq.endswith("%"):
+        hi = float(fq[:-1]) >= 80
+    if hi and f[2] != "NOT":
+        frequent.add((d, f[3]))
 dids = sorted(d for d in dis if dis[d][0])
 N = len(dids)
 cnt = collections.Counter()
@@ -57,12 +65,12 @@ pa, pb = [], []
 for t in terms:
     for a in anc(t):
         if a in idx: pa.append(idx[t]); pb.append(idx[a])
-dd, dt, nd, nt = [], [], [], []
+dd, dt, nd, nt, df = [], [], [], [], []
 for k, d in enumerate(dids):
-    for t in dis[d][0]: dd.append(k); dt.append(idx[t])
+    for t in dis[d][0]: dd.append(k); dt.append(idx[t]); df.append((d, t) in frequent)
     for t in dis[d][1]: nd.append(k); nt.append(idx[t])
 np.savez_compressed(out / "catalog.npz", ic=ic, anc_term=np.array(pa, np.int32), anc_of=np.array(pb, np.int32),
-    dis_idx=np.array(dd, np.int32), dis_term=np.array(dt, np.int32), not_idx=np.array(nd, np.int32), not_term=np.array(nt, np.int32))
+    dis_idx=np.array(dd, np.int32), dis_term=np.array(dt, np.int32), dis_freq=np.array(df, np.bool_), not_idx=np.array(nd, np.int32), not_term=np.array(nt, np.int32))
 json.dump({"hpo_version": "2026-09-01", "hpoa_version": "2026-09-02", "terms": terms,
            "labels": [nodes[t][0] for t in terms], "synonyms": [nodes[t][1] for t in terms],
            "diseases": dids, "disease_names": [names[d] for d in dids]}, open(out / "terms.json", "w"), separators=(",", ":"))

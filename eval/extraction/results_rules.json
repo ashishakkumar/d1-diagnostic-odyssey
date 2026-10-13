@@ -1,0 +1,46 @@
+{
+ "path": "rules",
+ "models": null,
+ "GSC+": {
+  "docs_scored": 206,
+  "docs_total": 206,
+  "exact": {
+   "P": 0.8905,
+   "R": 0.5118,
+   "F1": 0.65
+  },
+  "relaxed": {
+   "P": 0.9723,
+   "R": 0.7263,
+   "F1": 0.8315
+  },
+  "invalid_predicted_ids": 0,
+  "gold_ids_not_in_release": 2,
+  "downstream_agreement": {
+   "docs": 199,
+   "gold_top1_is_extracted_top1": 0.5226,
+   "gold_top1_in_extracted_top5": 0.6734
+  }
+ },
+ "ID-68": {
+  "docs_scored": 68,
+  "docs_total": 68,
+  "exact": {
+   "P": 0.8937,
+   "R": 0.6412,
+   "F1": 0.7467
+  },
+  "relaxed": {
+   "P": 0.9669,
+   "R": 0.725,
+   "F1": 0.8287
+  },
+  "invalid_predicted_ids": 0,
+  "gold_ids_not_in_release": 14,
+  "downstream_agreement": {
+   "docs": 68,
+   "gold_top1_is_extracted_top1": 0.5147,
+   "gold_top1_in_extracted_top5": 0.5588
+  }
+ }
+}

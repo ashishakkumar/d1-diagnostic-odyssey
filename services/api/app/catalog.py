@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
+ABSENT_WEIGHT = 0.05  # set on the train split only, see eval/full_catalogue
 DATA = Path(__file__).resolve().parent / "data" / "hpo"
 _NEG_CUES = re.compile(
     r"\b(no|not|denies|denied|without|negative for|absence of|absent|free of|never had|rules? out)\b",
@@ -52,6 +53,7 @@ class Catalog:
         self.ic = arr["ic"]
         self.anc_term, self.anc_of = arr["anc_term"], arr["anc_of"]
         self.dis_idx, self.dis_term = arr["dis_idx"], arr["dis_term"]
+        self.dis_freq = arr["dis_freq"]
         self.not_idx, self.not_term = arr["not_idx"], arr["not_term"]
         self.n_dis = len(self.diseases)
         self.dis_len = np.bincount(self.dis_idx, minlength=self.n_dis).astype(np.float32)
@@ -164,7 +166,7 @@ class Catalog:
         return out
 
     def scores(self, p: list[int], a: list[int]):
-        """Resnik BMA for every disease, minus half the mean IC of absent findings it lists."""
+        """Resnik BMA per disease, minus ABSENT_WEIGHT x mean IC of absent findings it lists as frequent (>=80%)."""
         sims = np.stack([self._sim_to_all(t) for t in p])  # Q x T
         pair = sims[:, self.dis_term]  # Q x A
         best_q = np.zeros((len(p), self.n_dis), np.float32)
@@ -179,10 +181,11 @@ class Catalog:
         for t in a:
             s = self._sim_to_all(t)[self.dis_term]
             has = np.zeros(self.n_dis, np.float32)
-            np.maximum.at(has, self.dis_idx, (s >= self.ic[t] - 1e-6).astype(np.float32))
+            listed = (s >= self.ic[t] - 1e-6) & self.dis_freq
+            np.maximum.at(has, self.dis_idx, listed.astype(np.float32))
             penalty += has * self.ic[t]
         if a:
-            score = score - 0.5 * penalty / len(a)
+            score = score - ABSENT_WEIGHT * penalty / len(a)
         return sims, best_q, score
 
     def rank(self, present: list[str], absent: list[str], top: int = 10) -> dict:

@@ -45,15 +45,22 @@ def test_marfan_features_rank_marfan_family(client):
     assert "marfan" in names or "ectopia lentis" in names
 
 
-def test_absent_finding_lowers_score():
+def test_absent_frequent_finding_lowers_score():
+    import numpy as np
+
     cat = catalog()
-    a = cat.rank(["HP:0001166", "HP:0001083"], [])
-    top = a["ranks"][0]
-    tid = cat.idx["HP:0001083"]
-    b = cat.rank(["HP:0001166", "HP:0001083"], ["HP:0001083"])
-    after = {r["disease_id"]: r["score"] for r in b["ranks"]}
-    assert after.get(top["disease_id"], -99) < top["score"]
-    assert tid >= 0
+    present = ["HP:0001166", "HP:0001083"]
+    frequent = []
+    for top in cat.rank(present, [])["ranks"]:
+        d = cat.diseases.index(top["disease_id"])
+        rows = np.where((cat.dis_idx == d) & cat.dis_freq)[0]
+        frequent = [cat.terms[cat.dis_term[r]] for r in rows if cat.terms[cat.dis_term[r]] not in present]
+        if frequent:
+            break
+    assert frequent
+    after = cat.rank(present, [frequent[0]], top=50)
+    scores = {r["disease_id"]: r["score"] for r in after["ranks"]}
+    assert scores.get(top["disease_id"], -99) < top["score"]
 
 
 def test_llm_ids_are_ignored(client, monkeypatch):

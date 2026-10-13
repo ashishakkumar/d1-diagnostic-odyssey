@@ -49,14 +49,28 @@ def analyze(note: str, use_ai: bool = True) -> dict:
         why = "No model key is configured on this server, so the rules matcher ran."
     else:
         why = "AI extraction was switched off for this request."
+    rule_hits = cat.extract_rules(note)
     if path == "rules":
-        for f in cat.extract_rules(note):
-            findings.append({**f, "onset": None, "label": None})
+        for f in rule_hits:
+            findings.append({**f, "onset": None, "label": None, "source": "rules"})
+    else:
+        for f in findings:
+            f["source"] = "model"
     t1 = time.perf_counter()
     for f in findings:
         top = f["candidates"][0] if f["candidates"] else None
         f["chosen"] = top["hpo_id"] if top and top["score"] >= CONFIDENT else None
         f["needs_review"] = f["chosen"] is None and bool(top)
+    if path != "rules":
+        # Hybrid: exact HPO label/synonym hits the model missed are added (raised GSC+ recall,
+        # see eval/extraction/RESULTS.md). They are labelled as rules in the UI.
+        have = {f["chosen"] for f in findings if f["chosen"]}
+        for f in rule_hits:
+            hid = f["candidates"][0]["hpo_id"]
+            if hid not in have:
+                findings.append({**f, "onset": None, "label": None, "source": "rules",
+                                 "chosen": hid, "needs_review": False})
+                have.add(hid)
     present = [f["chosen"] for f in findings if f["chosen"] and f["present"]]
     absent = [f["chosen"] for f in findings if f["chosen"] and not f["present"]]
     ranked = cat.rank(present, absent)
@@ -64,7 +78,7 @@ def analyze(note: str, use_ai: bool = True) -> dict:
     extract_actor = "Rules (HPO label and synonym matcher)" if path == "rules" else f"Language model ({model})"
     stages = [
         {"id": "extract", "label": "Extract", "actor": extract_actor, "ms": round((t1 - t0) * 1000),
-         "did": f"Found {len(findings)} findings, {sum(not f['present'] for f in findings)} marked absent."},
+         "did": f"Found {len(findings)} findings ({sum(f.get('source') == 'rules' for f in findings)} from the rules matcher), {sum(not f['present'] for f in findings)} marked absent."},
         {"id": "map", "label": "Map", "actor": "Exact, fuzzy and embedding search over HPO",
          "did": f"Grounded {sum(1 for f in findings if f['chosen'])} to HPO ids; "
                 f"{sum(f['needs_review'] for f in findings)} need your check. The model never supplies ids."},

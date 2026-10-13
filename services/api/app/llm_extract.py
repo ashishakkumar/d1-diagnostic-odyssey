@@ -13,7 +13,9 @@ import re
 
 import httpx
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODELS = [m.strip() for m in os.environ.get(
+    "GEMINI_MODELS", "gemini-3.5-flash-lite,gemini-2.5-flash").split(",") if m.strip()]
+GEMINI_MODEL = GEMINI_MODELS[0]
 OPENROUTER_MODELS = [
     m.strip() for m in os.environ.get(
         "OPENROUTER_FREE_MODELS",
@@ -70,22 +72,22 @@ def extract(note: str, post=httpx.post) -> dict:
     errors = []
     key = os.environ.get("GEMINI_API_KEY")
     if key:
-        try:
-            r = post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
-                headers={"x-goog-api-key": key},
-                json={"contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                      "generationConfig": {"temperature": 0, "responseMimeType": "application/json",
-                                           "thinkingConfig": {"thinkingBudget": 0}}},
-                timeout=25,
-            )
-            if r.status_code == 200:
-                parts = r.json()["candidates"][0]["content"]["parts"]
-                result = _parse("".join(p.get("text", "") for p in parts))
-                return {**result, "provider": "gemini", "model": GEMINI_MODEL}
-            errors.append(f"gemini {r.status_code}")
-        except Exception as exc:  # noqa: BLE001
-            errors.append(f"gemini {type(exc).__name__}")
+        for gmodel in GEMINI_MODELS:
+            try:
+                r = post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{gmodel}:generateContent",
+                    headers={"x-goog-api-key": key},
+                    json={"contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                          "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}},
+                    timeout=25,
+                )
+                if r.status_code == 200:
+                    parts = r.json()["candidates"][0]["content"]["parts"]
+                    text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
+                    return {**_parse(text), "provider": "gemini", "model": gmodel}
+                errors.append(f"{gmodel} {r.status_code}")
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{gmodel} {type(exc).__name__}")
     okey = os.environ.get("OPENROUTER_API_KEY")
     if okey:
         for model in OPENROUTER_MODELS:

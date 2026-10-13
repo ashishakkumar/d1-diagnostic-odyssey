@@ -1,0 +1,48 @@
+{
+ "path": "ai",
+ "models": [
+  "gemini-3.5-flash-lite"
+ ],
+ "GSC+": {
+  "docs_scored": 206,
+  "docs_total": 206,
+  "exact": {
+   "P": 0.8012,
+   "R": 0.3973,
+   "F1": 0.5312
+  },
+  "relaxed": {
+   "P": 0.9251,
+   "R": 0.6224,
+   "F1": 0.7442
+  },
+  "invalid_predicted_ids": 0,
+  "gold_ids_not_in_release": 2,
+  "downstream_agreement": {
+   "docs": 199,
+   "gold_top1_is_extracted_top1": 0.3417,
+   "gold_top1_in_extracted_top5": 0.4573
+  }
+ },
+ "ID-68": {
+  "docs_scored": 43,
+  "docs_total": 68,
+  "exact": {
+   "P": 0.694,
+   "R": 0.6031,
+   "F1": 0.6454
+  },
+  "relaxed": {
+   "P": 0.8182,
+   "R": 0.7283,
+   "F1": 0.7706
+  },
+  "invalid_predicted_ids": 0,
+  "gold_ids_not_in_release": 8,
+  "downstream_agreement": {
+   "docs": 43,
+   "gold_top1_is_extracted_top1": 0.3721,
+   "gold_top1_in_extracted_top5": 0.5349
+  }
+ }
+}
